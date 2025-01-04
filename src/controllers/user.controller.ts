@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
-import { Iuser } from "../interfaces/user.interface";
-import { UserService } from "../services/user.service";
-import { statuscode } from "../constants/status";
-import { errMSG } from "../constants/message";
+import { IUser } from "../interfaces/user.interface.js";
+import { UserService } from "../services/user.service.js";
+import { statuscode } from "../constants/status.js";
+import { errMSG } from "../constants/message.js";
 
 const userService = new UserService();
 
 export const signup = async (req: Request, res: Response) => {
     try {
-        const signupData: Iuser = req.body;
+        const signupData: IUser = req.body;
         const createdUser = await userService.createUser(signupData);
         res.status(createdUser.statuscode).json(createdUser);
     } catch (error) {
@@ -19,7 +19,7 @@ export const signup = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
     try {
-        const loginData: Iuser = req.body;
+        const loginData: IUser = req.body;
         const loginUser = await userService.loginUser(loginData);
         res.status(loginUser.statuscode).json(loginUser);
     } catch (error) {

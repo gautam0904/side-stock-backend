@@ -1,4 +1,4 @@
-import { errMSG } from '../constants/message';
+import { errMSG } from '../constants/message.js';
 
 export class ApiError extends Error {
   statuscode: number;

@@ -1,14 +1,14 @@
-import User from "../models/user.model";
-import { errMSG, MSG } from '../constants/message';
-import { statuscode } from "../constants/status";
+import User from "../models/user.model.js";
+import { errMSG, MSG } from '../constants/message.js';
+import { statuscode } from "../constants/status.js";
 import jwt from 'jsonwebtoken';
-import { Iuser } from "../interfaces/user.interface";
-import { ApiError } from "../utils/apiError";
+import { IUser } from "../interfaces/user.interface.js";
+import { ApiError } from "../utils/apiError.js";
 import bcrypt from 'bcrypt'
 
 
 export class UserService {
-    async createUser(user: Iuser) {
+    async createUser(user: IUser) {
         const existinguser = await User.find({ Email: user.email });
         if (existinguser.length != 0) {
             throw new ApiError(statuscode.BADREQUEST, errMSG.exsistuser);
@@ -26,7 +26,7 @@ export class UserService {
 
     }
 
-    async loginUser(loginData: Iuser) {
+    async loginUser(loginData: IUser) {
         const existUser = await User.findOne({ Email: loginData.email });
         if (!existUser) {
             throw new ApiError(statuscode.NOCONTENT, errMSG.userNotFound);
