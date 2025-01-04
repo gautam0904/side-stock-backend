@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { errMSG } from "../constants/message";
+import { errMSG } from "../constants/message.js";
 import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema ({
