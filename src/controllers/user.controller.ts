@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { IUser } from "../interfaces/user.interface.js";
 import { UserService } from "../services/user.service.js";
 import { statuscode } from "../constants/status.js";
-import { errMSG } from "../constants/message.js";
+import { ERROR_MSG } from "../constants/message.js";
 
 const userService = new UserService();
 
@@ -14,7 +14,7 @@ export const signup = async (req: Request, res: Response) => {
         res.status(createdUser.statuscode).json(createdUser);
     } catch (error) {
         res.status(error.statuscode || statuscode.INTERNALSERVERERROR)
-            .json({ message: error.message || errMSG.InternalServerErrorResult, data: error });
+            .json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });
     }
 }
 
@@ -25,7 +25,7 @@ export const login = async (req: Request, res: Response) => {
         res.status(loginUser.statuscode).json(loginUser);
     } catch (error) {
         res.status(error.statuscode || statuscode.INTERNALSERVERERROR)
-        .json({ message: error.message || errMSG.InternalServerErrorResult, data: error });
+        .json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });
     }
 }
 

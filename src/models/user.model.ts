@@ -1,20 +1,20 @@
 import mongoose from "mongoose";
-import { errMSG } from "../constants/message.js";
+import { ERROR_MSG } from "../constants/message.js";
 import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema ({
     name: {
         type: String,
-        required: errMSG.required("User's Name")
-    },
-    email : {
-        type : String,
-        required : [true ,"email is required"]
+        required: ERROR_MSG.REQUIRED("User's Name")
     },
     password : {
         type : String,
-        required : [true , "Password is required"]
+        required : [true , ERROR_MSG.REQUIRED("Password")]
     },
+    type : {
+        type : String,
+        required : false
+    }
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

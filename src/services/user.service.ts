@@ -1,61 +1,88 @@
 import User from "../models/user.model.js";
-import { errMSG, MSG } from '../constants/message.js';
+import { ERROR_MSG, MSG } from '../constants/message.js';
 import { statuscode } from "../constants/status.js";
 import jwt from 'jsonwebtoken';
 import { IUser } from "../interfaces/user.interface.js";
 import { ApiError } from "../utils/apiError.js";
 import bcrypt from 'bcrypt'
 
+interface UserDocument {
+    password?: string;
+    [key: string]: any;
+}
 
 export class UserService {
     async createUser(user: IUser) {
-        const existinguser = await User.find({ Email: user.email });
-        if (existinguser.length != 0) {
-            throw new ApiError(statuscode.BADREQUEST, errMSG.exsistuser);
-        }
-        const result = await User.create({
-            Name: user.name,
-            Email: user.email,
-            Password: user.password
-        });
-        return {
-            statuscode: statuscode.CREATED,
-            message: MSG.usercreated,
-            data: result
-        }
+        try {
+            const existinguser = await User.findOne({ 
+                name: user.name.toLowerCase()
+            });
+            
+            if (existinguser) {
+                throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.EXISTS('User'));
+            }
 
+            // Create user with lowercase fields
+            const result = await User.create({
+                name: user.name,
+                password: user.password,
+		        type: user.type
+            })
+
+            const userResponse = result.toObject() as { password?: string, [key: string]: any };
+            delete userResponse.password;
+
+            return {
+                statuscode: statuscode.CREATED,
+                message: MSG.USER_CREATED,
+                data: userResponse
+            }
+        } catch (error) {
+            throw new ApiError(
+                error.statuscode || statuscode.INTERNALSERVERERROR,
+                error.message || ERROR_MSG.DEFAULT_ERROR
+            );
+        }
     }
 
     async loginUser(loginData: IUser) {
-        const existUser = await User.findOne({ Email: loginData.email });
-        if (!existUser) {
-            throw new ApiError(statuscode.NOCONTENT, errMSG.userNotFound);
-        }
-
-        const isMatch = bcrypt.compare(loginData.password, existUser.password);
-
-        if (!isMatch) {
-            throw new ApiError(statuscode.NOTACCEPTABLE, errMSG.passwordNotMatch)
-        }
-
-        const token = jwt.sign(
-            {
-                id: existUser._id,
-            },
-            process.env.AccessTokenSeceret || 'side',
-            {
-                expiresIn: process.env.AccessExpire
+        try {
+            const existUser = await User.findOne({ 
+                name: loginData.name.toLowerCase()
             });
-
-        return {
-            statuscode: statuscode.OK,
-            message: MSG.success('User logged in'),
-            data: {
-                token: token,
-                user: existUser
+            
+            if (!existUser) {
+                throw new ApiError(statuscode.NOCONTENT, ERROR_MSG.USER_NOT_FOUND);
             }
+
+            const isMatch = await bcrypt.compare(loginData.password, existUser.password);
+
+            if (!isMatch) {
+                throw new ApiError(statuscode.NOTACCEPTABLE, ERROR_MSG.PASSWORD_MISMATCH)
+            }
+
+            const token = jwt.sign(
+                { id: existUser._id },
+                process.env.AccessTokenSeceret || 'side',
+                { expiresIn: process.env.AccessExpire || '1d' }
+            );
+
+            const userResponse = existUser.toObject() as { password?: string, [key: string]: any };
+            delete userResponse.password;
+
+            return {
+                statuscode: statuscode.OK,
+                message: MSG.SUCCESS('User logged in'),
+                data: {
+                    token,
+                    user: userResponse
+                }
+            }
+        } catch (error) {
+            throw new ApiError(
+                error.statuscode || statuscode.INTERNALSERVERERROR,
+                error.message || ERROR_MSG.DEFAULT_ERROR
+            );
         }
-
     }
-
 }

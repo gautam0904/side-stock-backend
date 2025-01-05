@@ -1,31 +1,47 @@
 export const MSG = {
-    DBconnected: 'Database is connected successfully',
-    login: 'Login successfully done',
-    serverlisten: 'Server is listening on port',
-    usercreated: 'User is created successfully',
-    loginSuccess: 'User is logged in successfully',
-    success: (task: string) => { return `${task} is done successfully` }
-  }
+  // System messages
+  DB_CONNECTED: 'Database is connected successfully',
+  SERVER_LISTENING: 'Server is listening on port',
+  INTERNAL_SERVER_ERROR: 'Internal server error response',
   
-  export const errMSG = {
-    connectDB: 'Database is not connected',
-    required: (field: string) => { return `${field} is required for prceding to next` },
-    InternalServerErrorResult: 'Internal server error response',
-    defaultErrorMsg: 'some things went wrong',
-    exsistuser: 'Email id is already exist ',
-    createUser: 'user is not created',
-    notExistUser: 'User is not exist',
-    passwordNotMatch: 'Password is not match',
-    expiredToken: 'Access token is not verified it may be expired',
-    notValidRole: (Role: string, action: string = '') => { return `${Role} don't have permission to ${action}` },
-    userNotFound: 'There is no user ',
-    updateUser: 'User is not updated',
-    notFoundDeleted: 'There is no deleted user',
-    retreiveUser: 'User is not retrieved',
-    invalidID: 'Invalid object ID',
-    notCreated: (field: string) => { return `${field} is not created due to some error` },
-    notUpdated: (field: string) => { return `${field} is not updated due to some error` },
-    notDeleted: (field: string) => { return `${field} is not deleted due to some error` },
-    notRetrieved: (field: string) => { return `${field} is not retrieved due to some error` },
-    notFound: (field: string) => { return `${field} is not Exist in our database` },
+  // Authentication messages
+  LOGIN_SUCCESS: 'User is logged in successfully',
+  USER_CREATED: 'User is created successfully',
+  TOKEN_EXPIRED: 'Access token is not verified it may be expired',
+  
+  // Generic success message
+  SUCCESS: (task: string) => `${task} completed successfully`,
+}
+
+export const ERROR_MSG = {
+  // Database related
+  DB_CONNECTION_FAILED: 'Database is not connected',
+  INVALID_OBJECT_ID: 'Invalid object ID',
+  
+  // Field validation
+  REQUIRED: (field: string) => `${field} is required to proceed`,
+  EXISTS: (field: string) => `This ${field} already exists in our database`,
+  NOT_FOUND: (field: string) => `${field} does not exist in our database`,
+  
+  // User related
+  USER_EXISTS: 'Email ID already exists',
+  USER_NOT_FOUND: 'User does not exist',
+  USER_CREATE_FAILED: 'Failed to create user',
+  USER_UPDATE_FAILED: 'Failed to update user',
+  USER_RETRIEVE_FAILED: 'Failed to retrieve user',
+  DELETED_USER_NOT_FOUND: 'No deleted user found',
+  PASSWORD_MISMATCH: 'Password does not match',
+  
+  // Authorization
+  INVALID_PERMISSION: (role: string, action: string = '') => 
+    `${role} does not have permission to ${action}`,
+    
+  // Generic error messages
+  DEFAULT_ERROR: 'Something went wrong',
+  OPERATION_FAILED: {
+    CREATE: (field: string) => `Failed to create ${field}`,
+    UPDATE: (field: string) => `Failed to update ${field}`,
+    DELETE: (field: string) => `Failed to delete ${field}`,
+    RETRIEVE: (field: string) => `Failed to retrieve ${field}`,
   }
+}

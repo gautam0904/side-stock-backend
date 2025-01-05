@@ -1,11 +1,11 @@
-import { errMSG } from '../constants/message.js';
+import { ERROR_MSG } from '../constants/message.js';
 
 export class ApiError extends Error {
   statuscode: number;
 
   constructor(
     statuscode: number,
-    message = errMSG.defaultErrorMsg
+    message = ERROR_MSG.DEFAULT_ERROR
   ) {
     super(message);
     this.statuscode = statuscode;
