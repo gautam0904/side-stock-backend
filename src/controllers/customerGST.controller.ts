@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { CustomerService } from "../services/customer.service.js";
-import { ICustomer } from "../interfaces/customer.interface.js";
+import { CustomerService } from "../services/customerGST.service.js";
+import { ICustomer } from "../interfaces/customerGST.interface.js";
 import { statuscode } from "../constants/status.js";
 import { ERROR_MSG } from "../constants/message.js";
 

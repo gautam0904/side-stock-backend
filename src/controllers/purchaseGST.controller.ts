@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { PurchaseService } from "../services/purchase.service.js";
-import { IPurchase } from "../interfaces/purchase.interface.js"; 
+import { PurchaseService } from "../services/purchaseGST.service.js";
+import { IPurchase } from "../interfaces/purchaseGST.interface.js"; 
 import { statuscode } from "../constants/status.js";
 import { ERROR_MSG } from "../constants/message.js";
 
@@ -49,7 +49,7 @@ export const updateParchase = async (req: Request, res: Response) => {
 export const deletePurchase = async (req: Request, res: Response) => {
     try {
         const purchaseId = req.body;
-        const deletedPurchase = await purchaseService.deleteCustomer(purchaseId);
+        const deletedPurchase = await purchaseService.deletePurchase(purchaseId);
         res.status(deletedPurchase.statuscode).json(deletedPurchase);
     } catch (error) {
         res.status(error.statuscode || statuscode.INTERNALSERVERERROR).json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });

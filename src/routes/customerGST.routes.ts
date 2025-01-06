@@ -1,6 +1,6 @@
 import express from "express";
-import { deleteCustomer, updateCustomer, getCustomers, getCustomerByName } from "../controllers/customer.controller.js";
-import { createCustomer } from "../controllers/customer.controller.js";
+import { deleteCustomer, updateCustomer, getCustomers, getCustomerByName } from "../controllers/customerGST.controller.js";
+import { createCustomer } from "../controllers/customerGST.controller.js";
 
 
 const customerRoutes = express.Router();

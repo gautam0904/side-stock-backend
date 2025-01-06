@@ -1,7 +1,7 @@
 import { ERROR_MSG, MSG } from "../constants/message.js";
 import { statuscode } from "../constants/status.js";
-import { ICustomer, PaginatedResponse, QueryOptions } from "../interfaces/customer.interface.js";
-import Customer from "../models/customer.model.js";
+import { ICustomer, PaginatedResponse, QueryOptions } from "../interfaces/customerGST.interface.js";
+import Customer from "../models/customerGST.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { PipelineStage } from 'mongoose';
 
@@ -23,7 +23,8 @@ export class CustomerService {
             mobileNumber: customer.mobileNumber,
             siteName: customer.siteName,
             siteAddress: customer.siteAddress,
-            billingAddress: customer.billingAddress
+            billingAddress: customer.billingAddress,
+            date: customer.date
         });
 
         return {
@@ -105,7 +106,7 @@ export class CustomerService {
                                 _id: 1,
                                 GSTnumber: 1,
                                 panCardNumber: 1,
-                                invoicenumber: 1,
+                                date  : 1,
                                 billTo: 1,
                                 customerName: 1,
                                 mobileNumber: 1,

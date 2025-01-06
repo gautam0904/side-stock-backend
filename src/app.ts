@@ -3,8 +3,8 @@ import dotenv from 'dotenv';
 import { connectDb } from './db/index.js';
 import cors from 'cors';
 import userRouter from "./routes/user.routes.js";
-import customerRoutes from './routes/cusomer.routes.js';
-import purchaseRoutes from './routes/purchase.routes.js';
+import customerRoutes from './routes/customerGST.routes.js';
+import purchaseRoutes from './routes/purchaseGST.routes.js';
 
 dotenv.config();
 

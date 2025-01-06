@@ -1,24 +1,28 @@
-export interface IPurchase {
+export interface ISale {
     GSTnumber: string;
-    billNumber: String;
+    invoiceNumber: string;
     date: Date;
-    companyName: String;
-    supplierName: String;
-    supplierNumber: String;
-    products: IProducts[],
-    transportAndCasting: Number;
-    amount: Number;
-    sgst: Number;
+    billTo: string;
+    mobileNumber: string;
+    billAddress: string;
+    siteName: string;
+    siteAddress: string;
+    pancard: string;
+    products:[{
+        productName: string;
+        size: number;
+        quantity: number;
+        rate: number;
+        startingDate: Date;
+        endingDate: Date;
+        amount: number;
+    }];
+    transportAndCasting: number;
+    amount: number;
+    sgst: number;
     cgst: Number;
     igst: Number;
     totalAmount: Number;
-}
-
-interface IProducts {
-    productName: String;
-    quantity: Number;
-    rate: Number;
-    amount: Number;
 }
 
 export interface QueryOptions {
@@ -33,7 +37,7 @@ export interface PaginatedResponse {
     statuscode: number;
     message: string;
     data: {
-        purchasBills: IPurchase[];
+        saleBills: ISale[];
         pagination: {
             total: number;
             currentPage: number;
@@ -42,10 +46,4 @@ export interface PaginatedResponse {
         };
         metadata: any;
     }
-}
-
-export interface ICustomerResponse {
-    statuscode: number;
-    message: string;
-    data: IPurchase[];
 }
