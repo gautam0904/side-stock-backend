@@ -2,11 +2,11 @@ import { Request, Response, NextFunction } from "express";
 import multer from "multer";
 
 const storage = multer.diskStorage({
-  destination: function (req: any, file: any, cb: Function) {
-    cb(null, "./public");
+  destination: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) {
+    cb(null, "./public"); 
   },
-  filename: function (reqm, file, cb) {
-    cb(null, file.originalname);
+  filename: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) {
+    cb(null, file.originalname); 
   }
 });
 
