@@ -1,13 +1,13 @@
 import { ERROR_MSG, MSG } from "../constants/message.js";
 import { statuscode } from "../constants/status.js";
-import { ICustomer, PaginatedResponse, QueryOptions } from "../interfaces/customerGST.interface.js";
-import Customer from "../models/customerGST.model.js";
+import { ICustomerGST, PaginatedResponse, QueryOptions } from "../interfaces/customerGST.interface.js";
+import CustomerGST from "../models/customerGST.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { PipelineStage } from 'mongoose';
 
-export class CustomerService {
-    async createCustomer(customer: ICustomer) {
-        const existingCustomer = await Customer.findOne({
+export class CustomerGSTService {
+    async createCustomer(customer: ICustomerGST) {
+        const existingCustomer = await CustomerGST.findOne({
             GSTnumber: customer.GSTnumber
         });
 
@@ -15,7 +15,7 @@ export class CustomerService {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.EXISTS('customer'));
         }
 
-        const result = await Customer.create({
+        const result = await CustomerGST.create({
             GSTnumber: customer.GSTnumber,
             panCardNumber: customer.panCardNumber,
             billTo: customer.billTo,
@@ -120,7 +120,7 @@ export class CustomerService {
             }
         ].filter(Boolean) as PipelineStage[];
 
-        const [result] = await Customer.aggregate(pipeline);
+        const [result] = await CustomerGST.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
         const totalPages = Math.ceil(total / Number(limit));
@@ -201,7 +201,7 @@ export class CustomerService {
             }
         ].filter(Boolean) as PipelineStage[];
 
-        const [result] = await Customer.aggregate(pipeline);
+        const [result] = await CustomerGST.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
         const totalPages = Math.ceil(total / Number(limit));
@@ -227,8 +227,8 @@ export class CustomerService {
         };
     }
 
-    async updateCustomer(customer: ICustomer) {
-        const existingCustomer = await Customer.findOne({
+    async updateCustomer(customer: ICustomerGST) {
+        const existingCustomer = await CustomerGST.findOne({
             GSTnumber: customer.GSTnumber
         });
 
@@ -236,7 +236,7 @@ export class CustomerService {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Customer"));
         }
 
-        const result = await Customer.findByIdAndUpdate(existingCustomer._id, customer, { new: true });
+        const result = await CustomerGST.findByIdAndUpdate(existingCustomer._id, customer, { new: true });
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Customer updated'),
@@ -244,8 +244,8 @@ export class CustomerService {
         };
     }
 
-    async deleteCustomer(customer: ICustomer) {
-        const existingCustomer = await Customer.findOne({
+    async deleteCustomer(customer: ICustomerGST) {
+        const existingCustomer = await CustomerGST.findOne({
             GSTnumber: customer.GSTnumber
         });
 
@@ -253,7 +253,7 @@ export class CustomerService {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Customer"));
         }
 
-        const result = await Customer.findByIdAndDelete(existingCustomer._id);
+        const result = await CustomerGST.findByIdAndDelete(existingCustomer._id);
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Customer deleted'),

@@ -5,6 +5,7 @@ import cors from 'cors';
 import userRouter from "./routes/user.routes.js";
 import customerRoutes from './routes/customerGST.routes.js';
 import purchaseRoutes from './routes/purchaseGST.routes.js';
+import saleRoutes from './routes/saleGST.routes.js';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use(cors({
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/customer", customerRoutes);
 app.use("/api/v1/purchase", purchaseRoutes);
+app.use("/api/v1/sale", saleRoutes);
 
 const PORT = process.env.PORT || 4000;
 

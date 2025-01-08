@@ -1,4 +1,4 @@
-export interface ICustomer {
+export interface ICustomerGST {
     GSTnumber: string;
     panCardNumber: string;
     billTo: string;
@@ -22,7 +22,7 @@ export interface PaginatedResponse {
     statuscode: number;
     message: string;
     data: {
-        customers: ICustomer[];
+        customers: ICustomerGST[];
         pagination: {
             total: number;
             currentPage: number;
@@ -36,5 +36,5 @@ export interface PaginatedResponse {
 export interface ICustomerResponse {
     statuscode: number;
     message: string;
-    data: ICustomer[];
+    data: ICustomerGST[];
 }

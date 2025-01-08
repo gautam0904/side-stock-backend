@@ -1,13 +1,13 @@
 import { ERROR_MSG, MSG } from "../constants/message.js";
 import { statuscode } from "../constants/status.js";
 import { ISale, PaginatedResponse, QueryOptions } from "../interfaces/saleGST.interface.js";
-import Sale from "../models/saleGST.model.js";
+import SalesGST from "../models/saleGST.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { PipelineStage } from 'mongoose';
 
 export class SaleService {
     async createSale(saleData: ISale){
-        const existingSale= await Sale.findOne({
+        const existingSale= await SalesGST.findOne({
             invoiceNumber: saleData.invoiceNumber
         });
 
@@ -15,7 +15,7 @@ export class SaleService {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.EXISTS('bill number'))
         }
 
-        const result =  await Sale.create({
+        const result =  await SalesGST.create({
             GSTnumber: saleData.GSTnumber,
             invoiceNumber: saleData.invoiceNumber,
             billTo: saleData.billTo,
@@ -88,7 +88,7 @@ export class SaleService {
             }
         ].filter(Boolean) as PipelineStage[];
 
-        const [result] = await Sale.aggregate(pipeline);
+        const [result] = await SalesGST.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
         const totalPages = Math.ceil(total / Number(limit));
@@ -154,7 +154,7 @@ export class SaleService {
             }
         ].filter(Boolean) as PipelineStage[];
 
-        const [result] = await Sale.aggregate(pipeline);
+        const [result] = await SalesGST.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
         const totalPages = Math.ceil(total / Number(limit));
@@ -181,7 +181,7 @@ export class SaleService {
     }
 
     async updateSale(saleData: ISale) {
-        const existingSale = await Sale.findOne({
+        const existingSale = await SalesGST.findOne({
             invceNumber: saleData.invoiceNumber
         });
 
@@ -189,7 +189,7 @@ export class SaleService {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Sale"));
         }
 
-        const result = await Sale.findByIdAndUpdate(existingSale._id, saleData, { new: true });
+        const result = await SalesGST.findByIdAndUpdate(existingSale._id, saleData, { new: true });
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Sale updated'),
@@ -197,7 +197,7 @@ export class SaleService {
         };
     }
     async deleteSale( id: string) {
-        const existingSale = await Sale.findOne({
+        const existingSale = await SalesGST.findOne({
             _id: id
         });
 
@@ -205,7 +205,7 @@ export class SaleService {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Sale"));
         }
 
-        const result = await Sale.findByIdAndDelete(existingSale._id);
+        const result = await SalesGST.findByIdAndDelete(existingSale._id);
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Sale deleted'),

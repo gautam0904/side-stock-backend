@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { ERROR_MSG } from "../constants/message.js";
 
-const purchaseSchema = new mongoose.Schema({
+const purchaseGSTSchema = new mongoose.Schema({
     GSTnumber: {
         type: String,
         required: [true, ERROR_MSG.REQUIRED("GST number")]
@@ -70,6 +70,6 @@ const purchaseSchema = new mongoose.Schema({
     }
 }, { timestamps:true });
 
-const Purchase = mongoose.model("Purchase", purchaseSchema);
+const PurchaseGST = mongoose.model("PurchaseGST", purchaseGSTSchema);
 
-export default Purchase;
+export default PurchaseGST;
