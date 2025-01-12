@@ -1,4 +1,5 @@
 export interface IPurchase {
+    _id?:string;
     GSTnumber: string;
     billNumber: String;
     date: Date;

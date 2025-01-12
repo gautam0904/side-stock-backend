@@ -7,7 +7,7 @@ const productsSchema = new mongoose.Schema({
         required: [true, ERROR_MSG.REQUIRED("Product name")]
     },
     size: {
-        type: Number,
+        type: String,
         required: [true, ERROR_MSG.REQUIRED("Product Size")]
     },
     stock:{

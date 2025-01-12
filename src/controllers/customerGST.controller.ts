@@ -48,8 +48,8 @@ export const updateCustomer = async (req: Request, res: Response) => {
 
 export const deleteCustomer = async (req: Request, res: Response) => {
     try {
-        const customerData: ICustomerGST = req.body;
-        const deletedCustomer = await customerGSTService.deleteCustomer(customerData);
+         const customerId = req.params.id;       
+        const deletedCustomer = await customerGSTService.deleteCustomer(customerId);
         res.status(deletedCustomer.statuscode).json(deletedCustomer);
     } catch (error) {
         res.status(error.statuscode || statuscode.INTERNALSERVERERROR).json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });

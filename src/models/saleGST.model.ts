@@ -40,12 +40,9 @@ const saleGSTSchema = new mongoose.Schema({
     },
     products:[{
         productName: {
-            type: String,
-            required: [true, ERROR_MSG.REQUIRED("Product name")]
-        },
-        size: {
-            type: Number,
-            required: [true, ERROR_MSG.REQUIRED("Product Size")]
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Products",
+            required: [true, ERROR_MSG.REQUIRED("Product")]
         },
         quantity: {
             type: Number,

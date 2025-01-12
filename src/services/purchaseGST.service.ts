@@ -2,13 +2,15 @@ import { ERROR_MSG, MSG } from "../constants/message.js";
 import { statuscode } from "../constants/status.js";
 import { IPurchase, PaginatedResponse, QueryOptions } from "../interfaces/purchaseGST.interface.js";
 import PurchaseGST from "../models/purchaseGST.model.js";
+import Product from "../models/products.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { PipelineStage } from 'mongoose';
 
 export class PurchaseService {
     async createPurchase(purchaseData: IPurchase){
+
         const existingPurchase= await PurchaseGST.findOne({
-            billNumber: purchaseData.billNumber
+            billNumber: purchaseData.billNumber,
         });
 
         if(existingPurchase){
@@ -31,6 +33,13 @@ export class PurchaseService {
             totalAmount: purchaseData.totalAmount
         });
 
+        const updatePromises = purchaseData.products.map((product) => {
+            return Product.updateOne({ _id: product.productName }, { stock: product.quantity });
+        });
+
+        // Execute all update promises concurrently
+        await Promise.all(updatePromises);
+
         return {
             statuscode: statuscode.CREATED,
             message: MSG.SUCCESS('Purchase creation'),
@@ -48,6 +57,7 @@ export class PurchaseService {
         } = options;
 
         const skip = (page - 1) * Number(limit);
+        const isAllRecords = limit === -1;
 
         const pipeline: PipelineStage[] = [
             search ? {
@@ -70,12 +80,23 @@ export class PurchaseService {
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
                         { $skip: skip },
-                        { $limit: Number(limit) },
+                         ...(isAllRecords ? [] : [{ $skip: skip }, { $limit: Number(limit) }]),
                         {
-                            $project: {
-                                _id: 1,
-                                GSTnumber: 1,
-                               
+                            $project:{
+                             _id: 1,
+                             GSTnumber:1,
+                             billNumber: 1,
+                             date: 1,
+                             companyName: 1,
+                             supplierName: 1,
+                             supplierNumber: 1,
+                             products: 1,
+                             transportAndCasting: 1,
+                             amount: 1,
+                             sgst: 1,
+                             cgst: 1,
+                             igst: 1,
+                             totalAmount: 1
                             }
                         }
                     ]
@@ -182,15 +203,8 @@ export class PurchaseService {
     }
 
     async updatePurchase(purchaseData: IPurchase) {
-        const existingPurchase = await PurchaseGST.findOne({
-            billNumber: purchaseData.billNumber
-        });
-
-        if (!existingPurchase) {
-            throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Purchase"));
-        }
-
-        const result = await PurchaseGST.findByIdAndUpdate(existingPurchase._id, purchaseData, { new: true });
+      
+        const result = await PurchaseGST.findByIdAndUpdate(purchaseData._id, purchaseData, { new: true });
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Purchase updated'),
@@ -198,15 +212,8 @@ export class PurchaseService {
         };
     }
     async deletePurchase( id: string) {
-        const existingPurchase = await PurchaseGST.findOne({
-            _id: id
-        });
-
-        if (!existingPurchase) {
-            throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Purchase"));
-        }
-
-        const result = await PurchaseGST.findByIdAndDelete(existingPurchase._id);
+    
+        const result = await PurchaseGST.findByIdAndDelete(id);
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Purchase deleted'),

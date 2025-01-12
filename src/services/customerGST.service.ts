@@ -228,13 +228,7 @@ export class CustomerGSTService {
     }
 
     async updateCustomer(customer: ICustomerGST) {
-        const existingCustomer = await CustomerGST.findOne({
-            GSTnumber: customer.GSTnumber
-        });
-
-        if (!existingCustomer) {
-            throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Customer"));
-        }
+        
 
         const result = await CustomerGST.findByIdAndUpdate(existingCustomer._id, customer, { new: true });
         return {
@@ -244,16 +238,8 @@ export class CustomerGSTService {
         };
     }
 
-    async deleteCustomer(customer: ICustomerGST) {
-        const existingCustomer = await CustomerGST.findOne({
-            GSTnumber: customer.GSTnumber
-        });
-
-        if (!existingCustomer) {
-            throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Customer"));
-        }
-
-        const result = await CustomerGST.findByIdAndDelete(existingCustomer._id);
+    async deleteCustomer( customerId: string){
+        const result = await CustomerGST.findByIdAndDelete(customerId);
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Customer deleted'),

@@ -6,8 +6,8 @@ const purchaseRoutes = express.Router();
 
 purchaseRoutes.post('/create', createPurchase);
 purchaseRoutes.get('/get', getPurchase);
-purchaseRoutes.put('/update', updateParchase);
-purchaseRoutes.delete('/delete', deletePurchase);
+purchaseRoutes.put('/update/:id', updateParchase);
+purchaseRoutes.delete('/delete/:id', deletePurchase);
 purchaseRoutes.get('/getByName', getPurchaseByName);
 
 export default purchaseRoutes;

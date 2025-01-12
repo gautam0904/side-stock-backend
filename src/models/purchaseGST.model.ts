@@ -8,6 +8,7 @@ const purchaseGSTSchema = new mongoose.Schema({
     },
     billNumber: {
         type: String,
+        unique: true,
         required: [true, ERROR_MSG.REQUIRED("Bill number")]
     },
     date: {

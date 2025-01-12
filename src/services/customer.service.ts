@@ -189,6 +189,8 @@ export class CustomerService {
         const existingCustomer = await Customer.findOne({
             _id: customer._id
         });
+        console.log(existingCustomer);
+        
 
         if (!existingCustomer) {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Customer"));
@@ -202,16 +204,16 @@ export class CustomerService {
         };
     }
 
-    async deleteCustomer(customer: ICustomer) {
+    async deleteCustomer(customerId: string) {
         const existingCustomer = await Customer.findOne({
-            _id: customer._id
+            _id: customerId
         });
 
         if (!existingCustomer) {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Customer"));
         }
 
-        const result = await Customer.findByIdAndDelete(existingCustomer._id);
+        const result = await Customer.findByIdAndDelete(customerId);
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Customer deleted'),
