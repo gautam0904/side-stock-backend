@@ -36,14 +36,10 @@ export class CustomerGSTService {
 
     async getCustomers(options: QueryOptions): Promise<PaginatedResponse> {
         const {
-            page = 1,
-            limit = 10,
             sortBy = 'createdAt',
             sortOrder = 'desc',
             search = ''
         } = options;
-
-        const skip = (page - 1) * Number(limit);
 
         const pipeline: PipelineStage[] = [
             search ? {
@@ -99,8 +95,6 @@ export class CustomerGSTService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        { $skip: skip },
-                        { $limit: Number(limit) },
                         {
                             $project: {
                                 _id: 1,
@@ -123,7 +117,6 @@ export class CustomerGSTService {
         const [result] = await CustomerGST.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
-        const totalPages = Math.ceil(total / Number(limit));
 
         return {
             statuscode: statuscode.OK,
@@ -132,9 +125,6 @@ export class CustomerGSTService {
                 customers: result.data,
                 pagination: {
                     total,
-                    currentPage: page,
-                    totalPages,
-                    limit
                 },
                 metadata: {
                     lastUpdated: new Date(),
@@ -149,14 +139,10 @@ export class CustomerGSTService {
 
     async getCustomerByName(options: QueryOptions){
         const {
-            page = 1,
-            limit = 10,
             sortBy = 'createdAt',
             sortOrder = 'desc',
             search = ''
         } = options;
-
-        const skip = (page - 1) * Number(limit);
 
         const pipeline: PipelineStage[] = [
             search ? {
@@ -180,8 +166,6 @@ export class CustomerGSTService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        { $skip: skip },
-                        { $limit: Number(limit) },
                         {
                             $project: {
                                 _id: 1,
@@ -204,7 +188,6 @@ export class CustomerGSTService {
         const [result] = await CustomerGST.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
-        const totalPages = Math.ceil(total / Number(limit));
 
         return {
             statuscode: statuscode.OK,
@@ -213,9 +196,6 @@ export class CustomerGSTService {
                 customers: result.data,
                 pagination: {
                     total,
-                    currentPage: page,
-                    totalPages,
-                    limit
                 },
                 metadata: {
                     lastUpdated: new Date(),
@@ -230,7 +210,7 @@ export class CustomerGSTService {
     async updateCustomer(customer: ICustomerGST) {
         
 
-        const result = await CustomerGST.findByIdAndUpdate(existingCustomer._id, customer, { new: true });
+        const result = await CustomerGST.findByIdAndUpdate(customer._id, customer, { new: true });
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Customer updated'),

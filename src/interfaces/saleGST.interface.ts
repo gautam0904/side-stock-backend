@@ -26,8 +26,6 @@ export interface ISale {
 }
 
 export interface QueryOptions {
-    page?: number;
-    limit?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     search?: string;
@@ -40,9 +38,6 @@ export interface PaginatedResponse {
         saleBills: ISale[];
         pagination: {
             total: number;
-            currentPage: number;
-            totalPages: number;
-            limit: number;
         };
         metadata: any;
     }

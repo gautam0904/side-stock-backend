@@ -14,9 +14,6 @@ export interface PaginatedResponse {
         products: IProduct[];
         pagination: {
             total: number;
-            currentPage: number;
-            totalPages: number;
-            limit: number;
         };
         metadata: any;
     }

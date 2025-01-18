@@ -103,14 +103,10 @@ export class CustomerService {
 
     async getCustomers(options: QueryOptions): Promise<CustomerPaginatedResponse> {
         const {
-            page = 1,
-            limit = 10,
             sortBy = 'createdAt',
             sortOrder = 'desc',
             search = ''
         } = options;
-
-        const skip = (page - 1) * Number(limit);
 
         const pipeline: PipelineStage[] = [
             search ? {
@@ -134,8 +130,6 @@ export class CustomerService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        { $skip: skip },
-                        { $limit: Number(limit) },
                         {
                             $project: {
                                 _id: 1,
@@ -160,8 +154,7 @@ export class CustomerService {
 
         const [result] = await Customer.aggregate(pipeline);
 
-        const total = result.metadata[0]?.total || 0;
-        const totalPages = Math.ceil(total / Number(limit));
+        const total = result.metadata[0]?.total || 0
 
         return {
             statuscode: statuscode.OK,
@@ -169,10 +162,7 @@ export class CustomerService {
             data: {
                 items: result.data,
                 pagination: {
-                    total,
-                    currentPage: page,
-                    totalPages,
-                    limit
+                    total
                 },
                 metadata: {
                     lastUpdated: new Date(),

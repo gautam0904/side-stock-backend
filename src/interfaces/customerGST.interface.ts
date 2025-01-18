@@ -1,4 +1,5 @@
 export interface ICustomerGST {
+    _id?:string;
     GSTnumber: string;
     panCardNumber: string;
     billTo: string;
@@ -11,8 +12,6 @@ export interface ICustomerGST {
 }
 
 export interface QueryOptions {
-    page?: number;
-    limit?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     search?: string;
@@ -25,9 +24,6 @@ export interface PaginatedResponse {
         customers: ICustomerGST[];
         pagination: {
             total: number;
-            currentPage: number;
-            totalPages: number;
-            limit: number;
         };
         metadata: any;
     }
