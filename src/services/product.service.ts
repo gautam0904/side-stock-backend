@@ -37,15 +37,10 @@ export class ProductService {
 
     async getProduct(options: QueryOptions): Promise<PaginatedResponse> {
         const {
-            page = 1,
-            limit = 10,
             sortBy = 'createdAt',
             sortOrder = 'desc',
             search = ''
         } = options;
-
-        const skip = (page - 1) * Number(limit);
-        const isAllRecords = limit === -1;
 
         const pipeline: PipelineStage[] = [
             search ? {
@@ -64,8 +59,6 @@ export class ProductService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        { $skip: skip },
-                         ...(isAllRecords ? [] : [{ $skip: skip }, { $limit: Number(limit) }]),
                         {
                             $project:{
                              _id: 1,
@@ -84,7 +77,6 @@ export class ProductService {
         const [result] = await Product.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
-        const totalPages = Math.ceil(total / Number(limit));
 
         return {
             statuscode: statuscode.OK,
@@ -93,9 +85,6 @@ export class ProductService {
                 products: result.data,
                 pagination: {
                     total,
-                    currentPage: page,
-                    totalPages,
-                    limit
                 },
                 metadata: {
                     lastUpdated: new Date(),
