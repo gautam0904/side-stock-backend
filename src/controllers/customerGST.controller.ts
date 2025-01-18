@@ -9,6 +9,16 @@ const customerGSTService = new CustomerGSTService();
 export const createCustomer = async (req: Request, res: Response) => {
     try {
         const customerData: ICustomerGST = req.body;
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+        const aadharPhotoLocalpath = files?.profilePicture?.[0]?.path;
+        customerData.aadharPhoto = aadharPhotoLocalpath;
+
+        const panCardPhotoLocalpath = files?.profilePicture?.[0]?.path;
+        customerData.panCardPhoto = panCardPhotoLocalpath;
+
+        const customerPhotoLocalpath = files?.profilePicture?.[0]?.path;
+        customerData.customerPhoto = customerPhotoLocalpath;
+
         const createdCustomer = await customerGSTService.createCustomer(customerData);
         res.status(createdCustomer.statuscode).json(createdCustomer);
     } catch (error) {
@@ -48,7 +58,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
 
 export const deleteCustomer = async (req: Request, res: Response) => {
     try {
-         const customerId = req.params.id;       
+        const customerId = req.params.id;
         const deletedCustomer = await customerGSTService.deleteCustomer(customerId);
         res.status(deletedCustomer.statuscode).json(deletedCustomer);
     } catch (error) {
