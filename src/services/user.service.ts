@@ -52,7 +52,7 @@ export class UserService {
             });
             
             if (!existUser) {
-                throw new ApiError(statuscode.NOCONTENT, ERROR_MSG.USER_NOT_FOUND);
+                throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.USER_NOT_FOUND);
             }
 
             const isMatch = await bcrypt.compare(loginData.password, existUser.password);

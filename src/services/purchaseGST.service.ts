@@ -17,6 +17,19 @@ export class PurchaseService {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.EXISTS('bill number'))
         }
 
+        const databaseProduct = purchaseData.products.map((p)=>{
+            return {
+                productName: p.productName,
+                quantity: p.quantity,
+                rate: p.rate,
+                amount: p.rate,
+                size : p.size
+            }
+        });
+
+        console.log(databaseProduct);
+        
+
         const result =  await PurchaseGST.create({
             GSTnumber: purchaseData.GSTnumber,
             billNumber: purchaseData.billNumber,
@@ -24,7 +37,7 @@ export class PurchaseService {
             companyName: purchaseData.companyName,
             supplierName: purchaseData.supplierName,
             supplierNumber: purchaseData.supplierNumber,
-            products: purchaseData.products,
+            products: databaseProduct,
             transportAndCasting: purchaseData.transportAndCasting,
             amount: purchaseData.amount,
             sgst: purchaseData.sgst,
@@ -33,12 +46,12 @@ export class PurchaseService {
             totalAmount: purchaseData.totalAmount
         });
 
-        const updatePromises = purchaseData.products.map((product) => {
-            return Product.updateOne({ _id: product.productName }, { stock: product.quantity });
-        });
+        // const updatePromises = purchaseData.products.map((product) => {
+        //     return Product.updateOne({ _id: product.productName }, { stock: product.quantity });
+        // });
 
         // Execute all update promises concurrently
-        await Promise.all(updatePromises);
+        // await Promise.all(updatePromises);
 
         return {
             statuscode: statuscode.CREATED,
@@ -49,15 +62,10 @@ export class PurchaseService {
 
     async getPurchase(options: QueryOptions): Promise<PaginatedResponse> {
         const {
-            page = 1,
-            limit = 10,
             sortBy = 'createdAt',
             sortOrder = 'desc',
             search = ''
         } = options;
-
-        const skip = (page - 1) * Number(limit);
-        const isAllRecords = limit === -1;
 
         const pipeline: PipelineStage[] = [
             search ? {
@@ -79,8 +87,6 @@ export class PurchaseService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        { $skip: skip },
-                         ...(isAllRecords ? [] : [{ $skip: skip }, { $limit: Number(limit) }]),
                         {
                             $project:{
                              _id: 1,
@@ -107,7 +113,6 @@ export class PurchaseService {
         const [result] = await PurchaseGST.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
-        const totalPages = Math.ceil(total / Number(limit));
 
         return {
             statuscode: statuscode.OK,
@@ -116,9 +121,6 @@ export class PurchaseService {
                 purchaseBills: result.data,
                 pagination: {
                     total,
-                    currentPage: page,
-                    totalPages,
-                    limit
                 },
                 metadata: {
                     lastUpdated: new Date(),
@@ -132,14 +134,10 @@ export class PurchaseService {
     
     async getPurchaseByName(options: QueryOptions){
         const {
-            page = 1,
-            limit = 10,
             sortBy = 'createdAt',
             sortOrder = 'desc',
             search = ''
         } = options;
-
-        const skip = (page - 1) * Number(limit);
 
         const pipeline: PipelineStage[] = [
             search ? {
@@ -169,8 +167,6 @@ export class PurchaseService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        { $skip: skip },
-                        { $limit: Number(limit) },
                     ]
                 }
             }
@@ -179,8 +175,6 @@ export class PurchaseService {
         const [result] = await PurchaseGST.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
-        const totalPages = Math.ceil(total / Number(limit));
-
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS("Purchase retrieved"),
@@ -188,9 +182,6 @@ export class PurchaseService {
                 customers: result.data,
                 pagination: {
                     total,
-                    currentPage: page,
-                    totalPages,
-                    limit
                 },
                 metadata: {
                     lastUpdated: new Date(),
