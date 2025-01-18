@@ -44,8 +44,7 @@ export class CustomerService {
             const result = await Customer.create({
                 customerName: customer.customerName,
                 mobileNumber: customer.mobileNumber,
-                siteName: customer.siteName,
-                siteAddress: customer.siteAddress,
+                sites: customer.sites,
                 partnerName: customer.partnerName,
                 partnerMobileNumber: customer.partnerMobileNumber,
                 reference: customer.reference,
