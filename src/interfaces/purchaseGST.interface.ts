@@ -20,6 +20,7 @@ interface IProducts {
     quantity: Number;
     rate: Number;
     amount: Number;
+    size: string;
 }
 
 export interface QueryOptions {
@@ -37,9 +38,6 @@ export interface PaginatedResponse {
         purchaseBills: IPurchase[];
         pagination: {
             total: number;
-            currentPage: number;
-            totalPages: number;
-            limit: number;
         };
         metadata: any;
     }
