@@ -22,7 +22,8 @@ export interface ICustomer {
 }
 
 interface Iprizefix {
-    productId: string;
+    productName: string;
+    size: string;
     rate: number;
 }
 

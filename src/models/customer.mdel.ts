@@ -52,39 +52,42 @@ const customerSchema = new mongoose.Schema({
     },
     GSTnumber: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("GST number")]
+        required: false
     },
     panCardNumber: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("PAN Card number")]
+        required: false
     },
     date: {
         type: Date,
-        required: [true, ERROR_MSG.REQUIRED("Date")] 
+        required: false
     },
     billTo: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("Bill To")]
+        required: false
     },
     billingAddress: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("Billing Address")]
+        required: false
     },
-    sites:[{
+    sites: [{
         siteName: {
             type: String,
-            required: [true, ERROR_MSG.REQUIRED("Site Name")]
+            required: false
         },
         siteAddress: {
             type: String,
-            required: [true, ERROR_MSG.REQUIRED("Site Address")]
+            required: false
         },
     }],
-    prizefix:[{
-        productId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Products",
-            required: [true, ERROR_MSG.REQUIRED("Product ID")]
+    prizefix: [{
+        productName: {
+            type: String,
+            required: false
+        },
+        size: {
+            type: String,
+            required: false
         },
         rate: {
             type: Number,

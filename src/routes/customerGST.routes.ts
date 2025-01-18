@@ -6,20 +6,18 @@ import { upload } from "../middleware/multer.middlewares.js";
 
 const customerRoutes = express.Router();
 
-customerRoutes.post('/create', upload.fields([{
-    name: "aadharPhoto",
-    maxCount: 1
-  }]), upload.fields([{
-    name: "panCardPhoto",
-    maxCount: 1
-  }]), upload.fields([{
-    name: "customerPhoto",
-    maxCount: 1
-  }]), createCustomer);
+customerRoutes.post('/create',
+  upload.fields([
+    { name: "aadharPhoto", maxCount: 1 },
+    { name: "panCardPhoto", maxCount: 1 },
+    { name: "customerPhoto", maxCount: 1 }
+  ]),
+  createCustomer
+);
 customerRoutes.get('/get', getCustomers);
 customerRoutes.put('/update/:id', updateCustomer);
 customerRoutes.delete('/delete/:id', deleteCustomer);
 customerRoutes.get('/getByName', getCustomerByName);
 
 export default customerRoutes;
-    
+
