@@ -1,18 +1,27 @@
 export interface ICustomerGST {
-    GSTnumber: string;
-    panCardNumber: string;
-    billTo: string;
-    customerName: string;
-    mobileNumber: string;
-    siteName: string;
-    siteAddress: string;
-    billingAddress: string;
-    date: string;
+  _id?: string;
+     customerName: string;
+     mobileNumber: string;
+     partnerName: string;
+     partnerMobileNumber: string;
+     reference: string;
+     referenceMobileNumber: string;
+     residentAddress: string;
+     aadharNo: string;
+     pancardNo: string;
+     aadharPhoto: string;
+     panCardPhoto: string;
+     customerPhoto: string;
+     prizefix: Iprizefix[];
+     sites: ISite[];
+     GSTnumber: string;
+     panCardNumber: string;
+     billTo: string;
+     billingAddress: string;
+     date: string;
 }
 
 export interface QueryOptions {
-    page?: number;
-    limit?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     search?: string;
@@ -25,9 +34,6 @@ export interface PaginatedResponse {
         customers: ICustomerGST[];
         pagination: {
             total: number;
-            currentPage: number;
-            totalPages: number;
-            limit: number;
         };
         metadata: any;
     }
@@ -37,4 +43,14 @@ export interface ICustomerResponse {
     statuscode: number;
     message: string;
     data: ICustomerGST[];
+}
+
+interface Iprizefix {
+    productId: string;
+    rate: number;
+}
+
+export interface ISite {
+    siteName: string;
+    siteAddress: string;
 }

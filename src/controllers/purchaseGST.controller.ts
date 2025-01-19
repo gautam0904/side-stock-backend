@@ -39,6 +39,7 @@ export const getPurchaseByName = async (req: Request, res: Response) => {
 export const updateParchase = async (req: Request, res: Response) => {
     try {
         const purchaseData: IPurchase = req.body;
+console.log(purchaseData)
         const updatedPurchase = await purchaseService.updatePurchase(purchaseData);
         res.status(updatedPurchase.statuscode).json(updatedPurchase);
     } catch (error) {
@@ -48,7 +49,7 @@ export const updateParchase = async (req: Request, res: Response) => {
 
 export const deletePurchase = async (req: Request, res: Response) => {
     try {
-        const purchaseId = req.body;
+        const purchaseId = req.params.id;
         const deletedPurchase = await purchaseService.deletePurchase(purchaseId);
         res.status(deletedPurchase.statuscode).json(deletedPurchase);
     } catch (error) {

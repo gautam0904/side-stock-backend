@@ -1,14 +1,22 @@
 import mongoose from "mongoose";
 import { ERROR_MSG } from "../constants/message.js";
 
-const saleGSTSchema = new mongoose.Schema({
-    GSTnumber: {
+const billSchema = new mongoose.Schema({
+    customerName: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("GST number")]
+        required: [true, ERROR_MSG.REQUIRED("Customer Name")]
     },
-    invoiceNumber: {
+    mobileNumber: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("Bill number")]
+        required: [true, ERROR_MSG.REQUIRED("Mobile Number")]
+    },
+    partnerName: {
+        type: String,
+        required: false
+    },
+    partnerMobileNumber: {
+        type: String,
+        required: false
     },
     date: {
         type: Date,
@@ -18,9 +26,13 @@ const saleGSTSchema = new mongoose.Schema({
         type:String,
         required:[true, ERROR_MSG.REQUIRED("Bill To")]
     },
-    mobileNumber: {
-        type:String,
-        required:[true,ERROR_MSG.REQUIRED("Mobile Number")]
+    reference: {
+        type: String,
+        required: false
+    },
+    referenceMobileNumber: {
+        type: String,
+        required: false
     },
      billAddress: {
         type:String,
@@ -40,13 +52,12 @@ const saleGSTSchema = new mongoose.Schema({
     },
     products:[{
         productName: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Products",
+            type: String,
             required: [true, ERROR_MSG.REQUIRED("Product")]
         },
         quantity: {
             type: Number,
-            required: [true, ERROR_MSG.REQUIRED("Product quantity")]
+            required: false
         },
         rate: {
             type: Number,
@@ -58,39 +69,27 @@ const saleGSTSchema = new mongoose.Schema({
         },
         endingDate: {
         type: Date,
-        required: [true, ERROR_MSG.REQUIRED("Emding date")]
+        required: false
         },
         amount: {
             type: Number,
             required: [true, ERROR_MSG.REQUIRED("Product amount")]
         }
     }],
-    transportAndCasting: {
+    serviceCharge: {
         type: Number,
         required: [true, ERROR_MSG.REQUIRED("Transport and casting")]
     },
-    amount: {
+    damageCharge: {
         type: Number,
         required: [true, ERROR_MSG.REQUIRED("Amount")]
     },
-    sgst: {
-        type: Number,
-        required: false
-    },
-    cgst: {
-        type: Number,
-        required: false
-    },
-    igst: {
-        type: Number,
-        required: false
-    },
-    totalAmount: {
+    totalPayment: {
         type: Number,
         required: [true, ERROR_MSG.REQUIRED("Total amount")]
     }
 }, { timestamps:true });
 
-const SalesGST = mongoose.model("SalesGST", saleGSTSchema);
+const Bills = mongoose.model("Bills", billSchema);
 
-export default SalesGST;
+export default Bills;

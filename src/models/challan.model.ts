@@ -4,25 +4,24 @@ import { ERROR_MSG } from "../constants/message.js";
 const saleSchema = new mongoose.Schema({
     challenType: {
         type:String,
-        enum:['delevery', 'return'],
+        enum:['Delivery', 'Return'],
         required: [true, ERROR_MSG.REQUIRED("challenType")]
     },
     date: {
         type: Date,
-        required: [true, ERROR_MSG.REQUIRED("Purchase date")]
+        required: false
     },
-    customerId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Customer",
-        required: [true, ERROR_MSG.REQUIRED("Customer ID")]
+    customerName: {
+        type: String,
+        required: [true, ERROR_MSG.REQUIRED("Customer Name")]
     },
     siteName: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("Site Name")]
+        required: false
     },
     siteAddress: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("Site Address")]
+        required: false
     },
     loading: {
         type: Number,
@@ -34,14 +33,52 @@ const saleSchema = new mongoose.Schema({
     },
     challanNumber: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("Challan Number")]
+        required:false
+    },
+    mobileNumber: {
+        type: String,
+        required:false
     },
     transportCharges: {
         type: Number,
-        required: [true, ERROR_MSG.REQUIRED("Transport Charges")]
-    }
+        required:false
+    },
+    amount: {
+        type: Number,
+        required:false
+    },
+    totalAmount: {
+        type: Number,
+        required:false
+    },
+    products : [{
+        date: {
+            type: Date,
+            required: false
+        },
+        productName:{
+            type: String,
+            required:false
+        },
+        size: {
+            type: String,
+            required:false
+        },
+        quantity:{
+            type: Number,
+            required:false
+        },
+        rate:{
+            type: Number,
+            required:false
+        },
+        amount: {
+            type: Number,
+            required:false
+        },
+    }]
 }, { timestamps:true });
 
-const Sales = mongoose.model("Sales", saleSchema);
+const Challan = mongoose.model("Sales", saleSchema);
 
-export default Sales;
+export default Challan;

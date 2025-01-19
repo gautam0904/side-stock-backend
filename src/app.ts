@@ -6,6 +6,9 @@ import userRouter from "./routes/user.routes.js";
 import customerRoutes from './routes/customerGST.routes.js';
 import purchaseRoutes from './routes/purchaseGST.routes.js';
 import saleRoutes from './routes/saleGST.routes.js';
+import productRoutes from './routes/product.routes.js';
+import challanRoutes from './routes/challan.routes.js';
+import billRoutes from './routes/bill.routes.js';
 
 dotenv.config();
 
@@ -26,6 +29,9 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/customer", customerRoutes);
 app.use("/api/v1/purchase", purchaseRoutes);
 app.use("/api/v1/sale", saleRoutes);
+app.use("/api/v1/product", productRoutes);
+app.use("/api/v1/challan", challanRoutes);
+app.use("/api/v1/bill", billRoutes);
 
 const PORT = process.env.PORT || 4000;
 

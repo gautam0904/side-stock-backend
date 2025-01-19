@@ -1,4 +1,5 @@
 export interface IPurchase {
+    _id?:string;
     GSTnumber: string;
     billNumber: String;
     date: Date;
@@ -19,6 +20,7 @@ interface IProducts {
     quantity: Number;
     rate: Number;
     amount: Number;
+    size: string;
 }
 
 export interface QueryOptions {
@@ -36,9 +38,6 @@ export interface PaginatedResponse {
         purchaseBills: IPurchase[];
         pagination: {
             total: number;
-            currentPage: number;
-            totalPages: number;
-            limit: number;
         };
         metadata: any;
     }
