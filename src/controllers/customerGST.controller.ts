@@ -65,7 +65,7 @@ export const getCustomers = async (req: Request, res: Response) => {
 
 export const getCustomerByName = async (req: Request, res: Response) => {
     try {
-        const customerData = req.query;
+        const customerData = req.params;
         const customer = await customerGSTService.getCustomerByName(customerData);
         res.status(customer.statuscode).json(customer);
     } catch (error) {

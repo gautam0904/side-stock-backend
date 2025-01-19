@@ -17,7 +17,7 @@ customerRoutes.post('/create',
 customerRoutes.get('/get', getCustomers);
 customerRoutes.put('/update/:id', updateCustomer);
 customerRoutes.delete('/delete/:id', deleteCustomer);
-customerRoutes.get('/getByName', getCustomerByName);
+customerRoutes.get('/getByName/:name', getCustomerByName);
 
 export default customerRoutes;
 

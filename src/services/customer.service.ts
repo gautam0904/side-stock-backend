@@ -87,9 +87,9 @@ export class CustomerService {
 
 
             const result = await Customer.create({
+                GSTnumber: String(customer.GSTnumber),
                 customerName: String(customer.customerName || ''),
                 mobileNumber: String(customer.mobileNumber || ''),
-                GSTnumber: String(customer.GSTnumber || ''),
                 partnerName: String(customer.partnerName || ''),
                 partnerMobileNumber: String(customer.partnerMobileNumber || ''),
                 reference: String(customer.reference || ''),
@@ -170,7 +170,6 @@ export class CustomerService {
                         {
                             $project: {
                                 _id: 1,
-                                GSTnumber: 1,
                                 customerName: 1,
                                 mobileNumber: 1,
                                 siteName: 1,
@@ -183,10 +182,6 @@ export class CustomerService {
                                 aadharNo: 1,
                                 pancardNo: 1,
                                 prizefix: 1,
-                                sites: 1,   
-                                aadharPhoto: 1,
-                                panCardPhoto: 1,
-                                customerPhoto: 1,
                             }
                         }
                     ]
@@ -217,28 +212,28 @@ export class CustomerService {
 
     }
 
-    async getCustomerByName(options: QueryOptions){
+    async getCustomerByName(options: QueryOptions) {
         const {
             sortBy = 'createdAt',
             sortOrder = 'desc',
-            search = ''
+            search = '',
+            name = ''
         } = options;
-
+    
         const pipeline: PipelineStage[] = [
-            search ? {
+            // Apply $match only if `name` is provided and non-empty
+            ...(name ? [{
                 $match: {
                     $or: [
                         {
                             customerName: {
-                                $regex: search, $options:
-                                    'i'
+                                $regex: name, $options: 'i'  // Case-insensitive match
                             }
                         }
                     ]
                 }
-                   
-            } : { $match: {} },
-
+            }] : []),
+    
             {
                 $facet: {
                     metadata: [
@@ -249,18 +244,17 @@ export class CustomerService {
                         {
                             $project: {
                                 _id: 1,
-                                GSTnumber: 1,
-                                panCardNumber: 1,
-                                invoicenumber: 1,
-                                billTo: 1,
                                 customerName: 1,
                                 mobileNumber: 1,
                                 siteName: 1,
                                 siteAddress: 1,
-                                billingAddress: 1,
-                                aadharPhoto: 1,
-                                panCardPhoto: 1,
-                                customerPhoto: 1,
+                                partnerName: 1,
+                                partnerMobileNumber: 1,
+                                reference: 1,
+                                referenceMobileNumber: 1,
+                                residentAddress: 1,
+                                aadharNo: 1,
+                                pancardNo: 1,
                                 prizefix: 1,
                                 sites: 1
                             }
@@ -268,12 +262,16 @@ export class CustomerService {
                     ]
                 }
             }
-        ].filter(Boolean) as PipelineStage[];
-
-        const [result] = await Customer.aggregate(pipeline);
-
+        ];
+    
+        // Filter out empty stages (like if there's no $match applied)
+        const filteredPipeline = pipeline.filter(Boolean) as PipelineStage[];
+    
+        // Run the aggregation pipeline
+        const [result] = await Customer.aggregate(filteredPipeline);
+    
         const total = result.metadata[0]?.total || 0;
-
+    
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS("Customers retrieved"),
@@ -291,6 +289,7 @@ export class CustomerService {
             }
         };
     }
+    
 
     async updateCustomer(customer: ICustomer) {
         const existingCustomer = await Customer.findOne({
