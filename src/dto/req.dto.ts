@@ -40,6 +40,7 @@ export interface IBill {
   customerName: string;
   mobileNumber: string;
   partnerName: string;
+  billNumber: String;
   partnerMobileNumber: string;
   date: Date;
   billTo: string;

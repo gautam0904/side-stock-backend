@@ -10,6 +10,10 @@ const billSchema = new mongoose.Schema({
         type: String,
         required: [true, ERROR_MSG.REQUIRED("Mobile Number")]
     },
+    billNumber:{
+        type: String,
+        required: [true, ERROR_MSG.REQUIRED("Bill Number")]
+    },
     partnerName: {
         type: String,
         required: false

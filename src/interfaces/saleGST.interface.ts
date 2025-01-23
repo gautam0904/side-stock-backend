@@ -10,16 +10,16 @@ export interface ISale {
     pancard: string;
     products:[{
         productName: string;
-        size: number;
-        quantity: number;
-        rate: number;
+        size: Number;
+        quantity: Number;
+        rate: Number;
         startingDate: Date;
         endingDate: Date;
-        amount: number;
+        amount: Number;
     }];
     transportAndCasting: number;
     amount: number;
-    sgst: number;
+    sgst: Number;
     cgst: Number;
     igst: Number;
     totalAmount: Number;
