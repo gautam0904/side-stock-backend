@@ -51,7 +51,7 @@ const purchaseGSTSchema = new mongoose.Schema({
     }],
     transportAndCasting: {
         type: Number,
-        required: [true, ERROR_MSG.REQUIRED("Transport and casting")]
+        default: 0
     },
     amount: {
         type: Number,

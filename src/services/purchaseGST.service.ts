@@ -22,13 +22,10 @@ export class PurchaseService {
                 productName: p.productName,
                 quantity: p.quantity,
                 rate: p.rate,
-                amount: p.rate,
+                amount: p.amount,
                 size : p.size
             }
-        });
-
-        console.log(databaseProduct);
-        
+        });        
 
         const result =  await PurchaseGST.create({
             GSTnumber: purchaseData.GSTnumber,
@@ -45,13 +42,25 @@ export class PurchaseService {
             igst: purchaseData.igst,
             totalAmount: purchaseData.totalAmount
         });
-
-        // const updatePromises = purchaseData.products.map((product) => {
-        //     return Product.updateOne({ _id: product.productName }, { stock: product.quantity });
-        // });
-
-        // Execute all update promises concurrently
-        // await Promise.all(updatePromises);
+        
+        const updatePromises = purchaseData.products.map((product) => ({
+            updateOne: {
+              filter: { 
+                productName: product.productName.trim(),  
+                size: product.size.trim()  
+              },
+              update: {
+                $inc: { stock: product.quantity }
+              },
+            },
+          }));
+          
+          try {
+            const result: any = await Product.bulkWrite(updatePromises);
+          } catch (err) {
+            console.error("Error during bulk update:", err);
+          }
+          
 
         return {
             statuscode: statuscode.CREATED,

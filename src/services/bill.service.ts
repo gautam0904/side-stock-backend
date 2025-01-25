@@ -11,7 +11,7 @@ interface PaginatedResponse {
     statuscode: number;
     message: string;
     data: {
-        products: any;
+        bill: any;
         pagination: {
             total: number;
         };
@@ -146,25 +146,20 @@ export class BillService {
                 const monthWiseAmounts = this.calculateMonthlyAmounts(startDate, endDate, product.rate, product.quantity);
     
                 monthWiseAmounts.forEach((monthData) => {
-                    // Get the start and end dates for the product within this month
-                    const firstDayOfMonth = new Date(monthData.year, monthData.month - 1, 1); // First day of the current month
-                    const lastDayOfMonth = new Date(monthData.year, monthData.month, 0); // Last day of the current month
+                    const firstDayOfMonth = new Date(monthData.year, monthData.month - 1, 1); 
+                    const lastDayOfMonth = new Date(monthData.year, monthData.month, 0); 
                     let productStartDate = firstDayOfMonth;
                     let productEndDate = lastDayOfMonth;
     
-                    // Adjust the end date to be today's date if it's the last month
                     if (monthData.month === today.getMonth() + 1 && monthData.year === today.getFullYear()) {
                         productEndDate = today;
                     }
     
-                    // Ensure the product's start and end dates are within the month
                     productStartDate = productStartDate < new Date(product.startingDate) ? new Date(product.startingDate) : productStartDate;
                     productEndDate = productEndDate > new Date(product.endingDate) ? new Date(product.endingDate) : productEndDate;
     
-                    // Calculate the number of days the product is active within this month
                     const dayCount = Math.max(0, (productEndDate.getTime() - productStartDate.getTime()) / (1000 * 3600 * 24) + 1);
     
-                    // Calculate the total payment for previous months
                     let totalPaid = 0;
                     paymentDataMap.forEach((payment: any) => {
                         const nextFirstDate: any = new Date(Number(monthData.year), Number(monthData.month), 1);
@@ -173,11 +168,9 @@ export class BillService {
                         }
                     });
     
-                    // Deduct the previous payments from the calculated amount
                     previousRestBill += monthData.amount;
                     const remainingDue = previousRestBill - totalPaid;
     
-                    // Add month-wise data along with the remaining due (previousRestBill), dates, and day count
                     monthlyProducts.push({
                         productName: product.productName,
                         quantity: product.quantity,
@@ -185,16 +178,16 @@ export class BillService {
                         amount: monthData.amount,
                         month: monthData.month,
                         year: monthData.year,
-                        previousRestBill: remainingDue > 0 ? remainingDue : 0, // Ensure it doesn't go negative
+                        previousRestBill: remainingDue > 0 ? remainingDue : 0,
                         startingDate: productStartDate,
                         endingDate: productEndDate,
-                        dayCount: dayCount // Number of days the product is active in the month
+                        dayCount: dayCount 
                     });
                 });
             });
     
             return monthlyProducts;
-        }).flat(); // Flatten the array of all products from different bills
+        }).flat(); 
     
         // Step 4: Group by year and month and sum the amounts
         const groupedData = monthWiseData.reduce((acc: any, data: any) => {
@@ -213,7 +206,6 @@ export class BillService {
             return acc;
         }, {});
     
-        // Convert the grouped data to an array
         const aggregatedData = Object.values(groupedData);
     
         // Step 5: Return the response
@@ -221,7 +213,7 @@ export class BillService {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Bill retrieved'),
             data: {
-                products: aggregatedData, // Month-wise product data with start and end dates
+                bill: aggregatedData,
                 pagination: { total },
                 metadata: {
                     lastUpdated: new Date(),
@@ -242,26 +234,21 @@ export class BillService {
         let currentYear = currentMonth.getFullYear();
         let currentMonthIndex = currentMonth.getMonth();
 
-        // Loop over months between start and end date
         while (currentMonth <= endDate) {
             const monthStartDate = new Date(currentYear, currentMonthIndex, 1);
             const nextMonthStartDate: any = new Date(currentYear, currentMonthIndex + 1, 1);
             const monthEndDate = nextMonthStartDate > endDate ? endDate : new Date(nextMonthStartDate - 1); // End of the current month or the end date
 
-            // Calculate the number of days this product is active in the current month
             const daysInMonth = Math.max(0, (monthEndDate.getTime() - monthStartDate.getTime()) / (1000 * 3600 * 24) + 1);
 
-            // Calculate the amount for this month
             const amount = Number(rate) * Number(quantity) * daysInMonth;
 
-            // Add month and amount to result
             monthWiseAmounts.push({
                 month: currentMonthIndex + 1, 
                 year: currentYear,
                 amount: amount
             });
 
-            // Move to the next month
             currentMonthIndex++;
             if (currentMonthIndex > 11) {
                 currentMonthIndex = 0;
