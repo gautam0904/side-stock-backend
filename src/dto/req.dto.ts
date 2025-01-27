@@ -12,6 +12,7 @@ export interface IChallan {
   type: string;
   date: Date;
   custsomerName: string;
+  customerId: string;
   mobileNumber: string;
   siteName: string;
   siteAddress: string;
@@ -19,6 +20,8 @@ export interface IChallan {
   loading: number;
   unloading: number;
   transportCharge: number;
+  serviceCharge: Number;
+  damageCharge: Number;
   amount: number;
   totalAmount: number;
   [key: string]: any;
@@ -32,35 +35,4 @@ interface IProducts {
   quantity?: number;
   rate?: number;
   amount?: number;
-}
-
-
-export interface IBill {
-  _id?:string;
-  customerName: string;
-  mobileNumber: string;
-  partnerName: string;
-  billNumber: String;
-  partnerMobileNumber: string;
-  date: Date;
-  billTo: string;
-  reference: string;
-  referenceMobileNumber: string;
-  billAddress: string;
-  siteName: string;
-  siteAddress: string;
-  pancard: string;
-  products: Iproduct[],
-  serviceCharge: Number;
-  damageCharge: Number;
-  totalPayment: Number;
-}
-
-interface Iproduct {
-  productName: string
-  quantity: Number;
-  rate: Number;
-  startingDate: Date;
-  endingDate: Date;
-  amount: Number;
 }

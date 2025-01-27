@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { ERROR_MSG } from "../constants/message.js";
 
-const saleSchema = new mongoose.Schema({
+const challanSchema = new mongoose.Schema({
     challenType: {
         type:String,
         enum:['Delivery', 'Return'],
@@ -13,6 +13,11 @@ const saleSchema = new mongoose.Schema({
     },
     customerName: {
         type: String,
+        required: [true, ERROR_MSG.REQUIRED("Customer Name")]
+    },
+    customerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref:'Customer',
         required: [true, ERROR_MSG.REQUIRED("Customer Name")]
     },
     siteName: {
@@ -41,7 +46,15 @@ const saleSchema = new mongoose.Schema({
     },
     transportCharges: {
         type: Number,
-        required:false
+        default:0
+    },
+    serviceCharge: {
+        type: Number,
+        default:0
+    },
+    damageCharge: {
+        type: Number,
+        default:0
     },
     amount: {
         type: Number,
@@ -79,6 +92,6 @@ const saleSchema = new mongoose.Schema({
     }]
 }, { timestamps:true });
 
-const Challan = mongoose.model("Sales", saleSchema);
+const Challan = mongoose.model("Challan", challanSchema);
 
 export default Challan;

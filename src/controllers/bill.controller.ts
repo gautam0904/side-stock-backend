@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { BillService } from "../services/bill.service.js";
-import { IBill } from "../dto/req.dto.js";
+import { IBill } from "../interfaces/bill.interface.js";
 import { statuscode } from "../constants/status.js";
 import { ERROR_MSG } from "../constants/message.js";
 

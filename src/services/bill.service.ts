@@ -1,9 +1,9 @@
 import { ERROR_MSG, MSG } from "../constants/message.js";
 import { statuscode } from "../constants/status.js";
 import { ApiError } from "../utils/apiError.js";
-import { IBill } from "../dto/req.dto.js";
+import { IBill } from "../interfaces/bill.interface.js";
 import Bill from "../models/bill.model.js"
-import { PipelineStage } from "mongoose";
+import mongoose, { PipelineStage } from "mongoose";
 import { PaymentService } from "./payment.service.js";
 import Challan from "../models/challan.model.js";
 
@@ -21,46 +21,111 @@ interface PaginatedResponse {
 
 export class BillService {
     async createBill(bill: IBill) {
-        const [existingBill] = await Bill.aggregate([{
-            $match: {
-                billTo: bill.billTo,
-                mobileNumber: bill.mobileNumber
-            }
-        }]);
 
-        if (existingBill) {
-            throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.EXISTS('Bill'));
+        const aggregationPipeline = [
+            {
+                '$facet': {
+                    'returnChallans': [
+                        {
+                            '$match': {
+                                '_id': {
+                                    '$in': bill.challans.map((c) => (new mongoose.Schema.Types.ObjectId(c.challanId.toString())))
+                                },
+                                'challenType': 'Return'
+                            }
+                        }, {
+                            '$lookup': {
+                                'from': 'customers',
+                                'localField': 'customerId',
+                                'foreignField': '_id',
+                                'as': 'customerDetails'
+                            }
+                        }, {
+                            '$unwind': '$customerDetails'
+                        }
+                    ],
+                    'anyChallan': [
+                        {
+                            '$match': {
+                                '_id': {
+                                    '$in': bill.challans.map((c) => (new mongoose.Schema.Types.ObjectId(c.challanId.toString())))
+                                }
+                            }
+                        }, {
+                            '$lookup': {
+                                'from': 'customers',
+                                'localField': 'customerId',
+                                'foreignField': '_id',
+                                'as': 'customerDetails'
+                            }
+                        }, {
+                            '$unwind': '$customerDetails'
+                        },
+                    ]
+                }
+            }, {
+                '$project': {
+                    'challan': {
+                        '$cond': {
+                            'if': {
+                                '$gt': [
+                                    {
+                                        '$size': '$returnChallans'
+                                    }, 0
+                                ]
+                            },
+                            'then': '$returnChallans',
+                            'else': {
+                                '$arrayElemAt': [
+                                    '$anyChallan', 0
+                                ]
+                            }
+                        }
+                    }
+                }
+            }, {
+                '$replaceRoot': {
+                    'newRoot': {
+                        'results': '$result'
+                    }
+                }
+            }
+        ]
+        const challanDetail = await Challan.aggregate(aggregationPipeline)
+        let returnChallan = Array.isArray(challanDetail[0].challan) ? challanDetail[0].challan : [];
+
+        if (returnChallan.length > 0) {
+
+            const totals = returnChallan.reduce((acc : any, item: any) => {
+                acc.serviceCharge += item.serviceCharge || 0; 
+                acc.damageCharge += item.damageCharge || 0;  
+                return acc;
+            }, { serviceCharge: 0, damageCharge: 0 });
+
+            bill.serviceCharge = totals.serviceCharge;
+            bill.damageCharge = totals.damageCharge;
         }
 
-        bill.products = bill.products.map((p) => {
-            return {
-                productName: p.productName,
-                quantity: p.quantity,
-                rate: p.rate,
-                startingDate: p.startingDate,
-                endingDate: p.endingDate,
-                amount: p.amount
-            }
-        })
-
         const result = await Bill.create({
-            customerName: bill.customerName,
-            mobileNumber: bill.mobileNumber,
-            partnerName: bill.partnerName,
-            partnerMobileNumber: bill.partnerMobileNumber,
+            customerName: challanDetail[0].customerDetails.customerName,
+            mobileNumber: challanDetail[0].customerDetails.mobileNumber,
+            challans: bill.challans,
+            billNumber:1,
+            partnerName: challanDetail[0].customerDetails.partnerName || '',
+            partnerMobileNumber: challanDetail[0].customerDetails.partnerMobileNumber || '',
             date: bill.date,
-            billTo: bill.billTo,
-            reference: bill.reference,
-            referenceMobileNumber: bill.referenceMobileNumber,
-            billAddress: bill.billAddress,
-            siteName: bill.siteName,
-            siteAddress: bill.siteAddress,
-            pancard: bill.pancard,
+            billTo: challanDetail[0].customerDetails.customerName,
+            reference: challanDetail[0].customerDetails.reference,
+            referenceMobileNumber: challanDetail[0].customerDetails.referenceMobileNumber,
             products: bill.products,
-            serviceCharge: bill.serviceCharge,
-            damageCharge: bill.damageCharge,
+            billAddress: challanDetail[0].customerDetails.billingAddress,
+            siteName: challanDetail[0].siteName,
+            siteAddress: challanDetail[0].siteAddress,
+            pancard: challanDetail[0].customerDetails.pancard,
+            monthData: bill.monthData,
+            serviceCharge: bill.serviceCharge || 0,
+            damageCharge: bill.damageCharge || 0,
             totalPayment: bill.totalPayment,
-            billNumber: bill.billNumber
         });
 
         return {
@@ -79,7 +144,7 @@ export class BillService {
             givenStartDate = null,
             givenEndDate = null
         } = options;
-    
+
         // Step 1: Initialize pipeline for Bill aggregation
         const pipeline: PipelineStage[] = [
             {
@@ -95,71 +160,51 @@ export class BillService {
                     metadata: [{ $count: 'total' }],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        {
-                            $project: {
-                                _id: 1,
-                                customerName: 1,
-                                mobileNumber: 1,
-                                partnerName: 1,
-                                partnerMobileNumber: 1,
-                                date: 1,
-                                billTo: 1,
-                                reference: 1,
-                                referenceMobileNumber: 1,
-                                billAddress: 1,
-                                siteName: 1,
-                                siteAddress: 1,
-                                pancard: 1,
-                                products: 1,
-                                serviceCharge: 1,
-                                damageCharge: 1,
-                                totalPayment: 1,
-                                billNumber: 1,
-                            }
-                        }
                     ]
                 }
             }
         ];
-    
+
         const [result] = await Bill.aggregate(pipeline);
         const total = result.metadata[0]?.total || 0;
-    
+
         // Step 2: Fetch payment data for each invoice
         let paymentDataMap: any = [];
-        if (result.data[0].billNumber) {
+        if (result?.data[0]?.billNumber) {
             const p = new PaymentService();
             paymentDataMap = await p.getPaymentForBill(result.data[0].billNumber);
             paymentDataMap = paymentDataMap.data.payments;
         }
-    
+
         // Step 3: Calculate month-wise data, day count, and track previous due payments
         let previousRestBill = 0; // Initialize the previous rest bill to track remaining payments
         const monthWiseData = result.data.map((bill: IBill) => {
             const today = new Date();
             let monthlyProducts: any = [];
-    
+
             bill.products.forEach((product) => {
                 const startDate = givenStartDate ? givenStartDate : new Date(product.startingDate);
                 const endDate = givenEndDate ? givenEndDate : (product.endingDate ? new Date(product.endingDate) : today);
-    
+
                 const monthWiseAmounts = this.calculateMonthlyAmounts(startDate, endDate, product.rate, product.quantity);
-    
+
                 monthWiseAmounts.forEach((monthData) => {
-                    const firstDayOfMonth = new Date(monthData.year, monthData.month - 1, 1); 
-                    const lastDayOfMonth = new Date(monthData.year, monthData.month, 0); 
+                    const firstDayOfMonth = new Date(monthData.year, monthData.month - 1, 1);
+                    const lastDayOfMonth = new Date(monthData.year, monthData.month, 0);
                     let productStartDate = firstDayOfMonth;
                     let productEndDate = lastDayOfMonth;
-    
+
                     if (monthData.month === today.getMonth() + 1 && monthData.year === today.getFullYear()) {
                         productEndDate = today;
                     }
-    
+
                     productStartDate = productStartDate < new Date(product.startingDate) ? new Date(product.startingDate) : productStartDate;
-                    productEndDate = productEndDate > new Date(product.endingDate) ? new Date(product.endingDate) : productEndDate;
-    
+                    if (product.endingDate) {
+                        productEndDate = productEndDate > new Date(product.endingDate) ? new Date(product.endingDate) : productEndDate;
+                    }
+
                     const dayCount = Math.max(0, (productEndDate.getTime() - productStartDate.getTime()) / (1000 * 3600 * 24) + 1);
-    
+
                     let totalPaid = 0;
                     paymentDataMap.forEach((payment: any) => {
                         const nextFirstDate: any = new Date(Number(monthData.year), Number(monthData.month), 1);
@@ -167,13 +212,14 @@ export class BillService {
                             totalPaid += payment.makePayment || 0;
                         }
                     });
-    
+
                     previousRestBill += monthData.amount;
                     const remainingDue = previousRestBill - totalPaid;
-    
+
                     monthlyProducts.push({
                         productName: product.productName,
                         quantity: product.quantity,
+                        size: product.size,
                         rate: product.rate,
                         amount: monthData.amount,
                         month: monthData.month,
@@ -181,14 +227,14 @@ export class BillService {
                         previousRestBill: remainingDue > 0 ? remainingDue : 0,
                         startingDate: productStartDate,
                         endingDate: productEndDate,
-                        dayCount: dayCount 
+                        dayCount: dayCount
                     });
                 });
             });
-    
+
             return monthlyProducts;
-        }).flat(); 
-    
+        }).flat();
+
         // Step 4: Group by year and month and sum the amounts
         const groupedData = monthWiseData.reduce((acc: any, data: any) => {
             const key = `${data.year}-${data.month}`;
@@ -202,12 +248,12 @@ export class BillService {
             }
             acc[key].totalAmount += data.amount;
             acc[key].products.push(data);
-    
+
             return acc;
         }, {});
-    
+
         const aggregatedData = Object.values(groupedData);
-    
+
         // Step 5: Return the response
         return {
             statuscode: statuscode.OK,
@@ -223,8 +269,8 @@ export class BillService {
             }
         };
     }
-    
-    
+
+
 
     // Helper function to calculate monthly amounts for a product
     private calculateMonthlyAmounts(startDate: Date, endDate: Date, rate: Number, quantity: Number) {
@@ -244,7 +290,7 @@ export class BillService {
             const amount = Number(rate) * Number(quantity) * daysInMonth;
 
             monthWiseAmounts.push({
-                month: currentMonthIndex + 1, 
+                month: currentMonthIndex + 1,
                 year: currentYear,
                 amount: amount
             });
