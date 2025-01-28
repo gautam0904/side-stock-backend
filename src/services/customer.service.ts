@@ -7,6 +7,7 @@ import { ICustomer } from "../interfaces/nonGSTmodels.interface.js";
 import { ICreateCustomerDTO } from "../dto/req.dto.js";
 import { CustomerPaginatedResponse } from "../dto/res.dto.js";
 import { deleteonCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
+import { json } from "stream/consumers";
 
 export class CustomerService {
     customerCloudinaryURL: string | null = null
@@ -167,23 +168,6 @@ export class CustomerService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        {
-                            $project: {
-                                _id: 1,
-                                customerName: 1,
-                                mobileNumber: 1,
-                                siteName: 1,
-                                siteAddress: 1,
-                                partnerName: 1,
-                                partnerMobileNumber: 1,
-                                reference: 1,
-                                referenceMobileNumber: 1,
-                                residentAddress: 1,
-                                aadharNo: 1,
-                                pancardNo: 1,
-                                prizefix: 1,
-                            }
-                        }
                     ]
                 }
             }
@@ -219,7 +203,7 @@ export class CustomerService {
             search = '',
             name = ''
         } = options;
-    
+
         const pipeline: PipelineStage[] = [
             // Apply $match only if `name` is provided and non-empty
             ...(name ? [{
@@ -233,7 +217,7 @@ export class CustomerService {
                     ]
                 }
             }] : []),
-    
+
             {
                 $facet: {
                     metadata: [
@@ -241,37 +225,19 @@ export class CustomerService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        {
-                            $project: {
-                                _id: 1,
-                                customerName: 1,
-                                mobileNumber: 1,
-                                siteName: 1,
-                                siteAddress: 1,
-                                partnerName: 1,
-                                partnerMobileNumber: 1,
-                                reference: 1,
-                                referenceMobileNumber: 1,
-                                residentAddress: 1,
-                                aadharNo: 1,
-                                pancardNo: 1,
-                                prizefix: 1,
-                                sites: 1
-                            }
-                        }
                     ]
                 }
             }
         ];
-    
+
         // Filter out empty stages (like if there's no $match applied)
         const filteredPipeline = pipeline.filter(Boolean) as PipelineStage[];
-    
+
         // Run the aggregation pipeline
         const [result] = await Customer.aggregate(filteredPipeline);
-    
+
         const total = result.metadata[0]?.total || 0;
-    
+
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS("Customers retrieved"),
@@ -289,14 +255,22 @@ export class CustomerService {
             }
         };
     }
-    
+
 
     async updateCustomer(customer: ICustomer) {
         const existingCustomer = await Customer.findOne({
             _id: customer._id
         });
-        console.log(existingCustomer);
-        
+        customer.prizefix = JSON.parse(customer.prizefix as any).map((p: any) => ({
+            productName: p.productName,
+            size: p.size,
+            rate: p.rate,
+        }))
+
+        customer.sites = JSON.parse(customer.sites as any).map((s:any) => ({
+            siteName: s.siteName,
+            siteAddress: s.siteAddress,
+        }))
 
         if (!existingCustomer) {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Customer"));

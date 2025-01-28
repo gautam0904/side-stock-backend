@@ -7,8 +7,8 @@ interface Product {
     month: number;
     year: number;
     previousRestBill: number;
-    startingDate: string;
-    endingDate: string | null;
+    startingDate: Date;
+    endingDate: Date | null;
     dayCount: number;
 }
 

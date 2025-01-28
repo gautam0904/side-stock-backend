@@ -11,6 +11,7 @@ interface PaginatedResponse {
     statuscode: number;
     message: string;
     data: {
+        billData:any;
         bill: any;
         pagination: {
             total: number;
@@ -145,12 +146,16 @@ export class BillService {
             givenEndDate = null
         } = options;
 
+        if (customerName == '' || siteName == '') {
+            throw new ApiError(statuscode.BADREQUEST, 'Some Field is missing............')
+        }
+
         // Step 1: Initialize pipeline for Bill aggregation
         const pipeline: PipelineStage[] = [
             {
                 $match: {
                     $and: [
-                        { customerName: { $regex: customerName.toString(), $options: 'i' } },
+                        { billName: { $regex: customerName.toString(), $options: 'i' } },
                         { siteName: { $regex: siteName.toString(), $options: 'i' } },
                     ]
                 }
@@ -183,16 +188,24 @@ export class BillService {
             let monthlyProducts: any = [];
 
             bill.products.forEach((product) => {
-                const startDate = givenStartDate ? givenStartDate : new Date(product.startingDate);
-                const endDate = givenEndDate ? givenEndDate : (product.endingDate ? new Date(product.endingDate) : today);
+                const startDate = givenStartDate ? new Date(givenStartDate) : new Date(product.startingDate);
+                const endDate = givenEndDate ? new Date(givenEndDate) : (product.endingDate ? new Date(product.endingDate) : today);
 
-                const monthWiseAmounts = this.calculateMonthlyAmounts(startDate, endDate, product.rate, product.quantity);
+                const monthWiseAmounts = this.calculateMonthlyAmounts(startDate, endDate, product.startingDate, product.endingDate, product.rate, product.quantity);
 
                 monthWiseAmounts.forEach((monthData) => {
                     const firstDayOfMonth = new Date(monthData.year, monthData.month - 1, 1);
                     const lastDayOfMonth = new Date(monthData.year, monthData.month, 0);
                     let productStartDate = firstDayOfMonth;
                     let productEndDate = lastDayOfMonth;
+
+                    if (startDate > firstDayOfMonth ) {
+                        productStartDate = startDate
+                    }
+                    
+                    if (endDate < lastDayOfMonth) {
+                        productEndDate = endDate
+                    }
 
                     if (monthData.month === today.getMonth() + 1 && monthData.year === today.getFullYear()) {
                         productEndDate = today;
@@ -203,12 +216,11 @@ export class BillService {
                         productEndDate = productEndDate > new Date(product.endingDate) ? new Date(product.endingDate) : productEndDate;
                     }
 
-                    const dayCount = Math.max(0, (productEndDate.getTime() - productStartDate.getTime()) / (1000 * 3600 * 24) + 1);
+                    const dayCount = parseInt((Math.max(0, (productEndDate.getTime() - productStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
 
                     let totalPaid = 0;
                     paymentDataMap.forEach((payment: any) => {
-                        const nextFirstDate: any = new Date(Number(monthData.year), Number(monthData.month), 1);
-                        if (new Date(payment.date) <= new Date(nextFirstDate - 1)) {
+                        if (new Date(payment.date) <= new Date(productEndDate) && new Date(payment.date) >= new Date(productStartDate)) {
                             totalPaid += payment.makePayment || 0;
                         }
                     });
@@ -254,11 +266,20 @@ export class BillService {
 
         const aggregatedData = Object.values(groupedData);
 
+        const finalTotal = aggregatedData.reduce((acc: any, data: any) => {
+            acc.totalAmount += data.totalAmount;
+            return acc;
+        }, {});
+
+        const billData : any = result.data[0] ?? {};
+        billData.totalPayment = finalTotal
+
         // Step 5: Return the response
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Bill retrieved'),
             data: {
+                billData,
                 bill: aggregatedData,
                 pagination: { total },
                 metadata: {
@@ -273,27 +294,67 @@ export class BillService {
 
 
     // Helper function to calculate monthly amounts for a product
-    private calculateMonthlyAmounts(startDate: Date, endDate: Date, rate: Number, quantity: Number) {
+    private calculateMonthlyAmounts(startDate: Date, endDate: Date, productStartDate: Date, productEndDate: Date | null, rate: Number, quantity: Number) {
         const monthWiseAmounts = [];
 
         let currentMonth = new Date(startDate);
         let currentYear = currentMonth.getFullYear();
         let currentMonthIndex = currentMonth.getMonth();
 
-        while (currentMonth <= endDate) {
-            const monthStartDate = new Date(currentYear, currentMonthIndex, 1);
-            const nextMonthStartDate: any = new Date(currentYear, currentMonthIndex + 1, 1);
-            const monthEndDate = nextMonthStartDate > endDate ? endDate : new Date(nextMonthStartDate - 1); // End of the current month or the end date
+        while (currentMonth <= new Date(endDate)) {
+            let monthStartDate = new Date(currentYear, currentMonthIndex, 1);
+            let nextMonthStartDate: any = new Date(currentYear, currentMonthIndex + 1, 1);
+            let monthEndDate = nextMonthStartDate > endDate ? endDate : new Date(nextMonthStartDate - 1); // End of the current month or the end date
+            productStartDate = new Date(productStartDate);
+            productEndDate = productEndDate == null ? new Date() : new Date(productEndDate);
+            
+            if (productStartDate > productEndDate  || startDate > endDate) {
+                throw new ApiError(statuscode.BADREQUEST , 'Date range is Wrong')
+            }
+            if (startDate > monthStartDate ) {
+                monthStartDate = startDate
+            }
+            
+            if (endDate < monthEndDate) {
+                monthEndDate = endDate
+            }
+            if ((monthStartDate >= productStartDate ) && (productEndDate >= monthEndDate)) {
+                
+                const daysInMonth = parseInt((Math.max(0, (monthEndDate.getTime() - monthStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
+                const amount = Number(rate) * Number(quantity) * daysInMonth;
+                monthWiseAmounts.push({
+                    month: currentMonthIndex + 1,
+                    year: currentYear,
+                    amount: amount
+                });
+            }else if ((productStartDate > monthStartDate) && (productEndDate >= monthEndDate)) {
+                const daysInMonth = parseInt((Math.max(0, (monthEndDate.getTime() - productStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
+                const amount = Number(rate) * Number(quantity) * daysInMonth;
+                monthWiseAmounts.push({
+                    month: currentMonthIndex + 1,
+                    year: currentYear,
+                    amount: amount
+                });
+            }else if ((productStartDate > monthStartDate) && (productEndDate < monthEndDate)) {
+                const daysInMonth = parseInt((Math.max(0, (productEndDate.getTime() - productStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
+                const amount = Number(rate) * Number(quantity) * daysInMonth;
+                monthWiseAmounts.push({
+                    month: currentMonthIndex + 1,
+                    year: currentYear,
+                    amount: amount
+                });
+            }else if ((monthStartDate >= productStartDate ) &&  (productEndDate < monthEndDate)) {
+                const daysInMonth = parseInt((Math.max(0, (productEndDate.getTime() - monthStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
+                const amount = Number(rate) * Number(quantity) * daysInMonth;
+                monthWiseAmounts.push({
+                    month: currentMonthIndex + 1,
+                    year: currentYear,
+                    amount: amount
+                });
+            }
 
-            const daysInMonth = Math.max(0, (monthEndDate.getTime() - monthStartDate.getTime()) / (1000 * 3600 * 24) + 1);
 
-            const amount = Number(rate) * Number(quantity) * daysInMonth;
 
-            monthWiseAmounts.push({
-                month: currentMonthIndex + 1,
-                year: currentYear,
-                amount: amount
-            });
 
             currentMonthIndex++;
             if (currentMonthIndex > 11) {

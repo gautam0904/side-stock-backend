@@ -15,15 +15,11 @@ export const createCustomer = async (req: Request, res: Response) => {
     try {
         const customerData: ICustomer = req.body;
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-        
-        if (!files?.aadharPhoto?.[0] || !files?.panCardPhoto?.[0] || !files?.customerPhoto?.[0]) {
-            throw new Error('Missing required files');
-        }
 
         // Store the file paths relative to the server URL
         aadharPhoto = customerData.aadharPhoto =files?.aadharPhoto?.[0].path;
-        panCardPhoto = customerData.panCardPhoto = files.panCardPhoto[0].path;
-        customerPhoto = customerData.customerPhoto = files.customerPhoto[0].path
+        panCardPhoto = customerData.panCardPhoto = files?.panCardPhoto?.[0].path;
+        customerPhoto = customerData.customerPhoto = files?.customerPhoto?.[0].path
 
         // Parse JSON strings if needed
         if (typeof customerData.prizefix === 'string') {
