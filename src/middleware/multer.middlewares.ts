@@ -1,15 +1,21 @@
-import { Request, Response, NextFunction } from "express";
-import multer from "multer";
+import { Request } from "express";
+import multer, { StorageEngine } from "multer";
 
-const storage = multer.diskStorage({
-  destination: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) {
-    cb(null, "./public"); 
+const storage: StorageEngine = multer.diskStorage({
+  destination: function (
+    req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void
+  ) {
+    cb(null, "./public"); // Correct path where files should be saved
   },
-  filename: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) {
-    cb(null, file.originalname); 
-  }
+  filename: function (
+    req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, filename: string) => void
+  ) {
+    cb(null, file.originalname); // Keep original filename
+  },
 });
 
-export const upload = multer({
-  storage
-});
+export const upload = multer({ storage });
