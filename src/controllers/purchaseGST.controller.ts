@@ -39,7 +39,6 @@ export const getPurchaseByName = async (req: Request, res: Response) => {
 export const updateParchase = async (req: Request, res: Response) => {
     try {
         const purchaseData: IPurchase = req.body;
-console.log(purchaseData)
         const updatedPurchase = await purchaseService.updatePurchase(purchaseData);
         res.status(updatedPurchase.statuscode).json(updatedPurchase);
     } catch (error) {

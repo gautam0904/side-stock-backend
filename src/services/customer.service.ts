@@ -24,7 +24,6 @@ export class CustomerService {
             if (existingCustomer) {
                 throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.EXISTS('customer'));
             }
-            try {
                 if (typeof customer.prizefix === 'string') {
                     customer.prizefix = JSON.parse(customer.prizefix);
                 } else if (Array.isArray(customer.prizefix)) {
@@ -39,15 +38,8 @@ export class CustomerService {
                     size: String(p.size || ''),
                     rate: Number(p.rate) || 0
                 }));
-            } catch (error) {
-                console.error('Error parsing prizefix:', error, customer.prizefix);
-                throw new ApiError(
-                    statuscode.BADREQUEST,
-                    'Invalid prizefix format. Expected array of products.'
-                );
-            }
+             
 
-            try {
                 if (typeof customer.sites === 'string') {
                     customer.sites = JSON.parse(customer.sites);
                 } else if (Array.isArray(customer.sites)) {
@@ -61,15 +53,10 @@ export class CustomerService {
                 // Validate and clean each site
                 customer.sites = customer.sites.map((site: any) => ({
                     siteName: String(site.siteName || ''),
-                    siteAddress: String(site.siteAddress || '')
+                    siteAddress: String(site.siteAddress || ''),
+                    challanNumber: String(site.challanNumber)
                 }));
-            } catch (error) {
-                console.error('Error parsing sites:', error, customer.sites);
-                throw new ApiError(
-                    statuscode.BADREQUEST,
-                    'Invalid sites format. Expected array of sites.'
-                );
-            }
+            
 
             if (customer.customerPhoto) {
                 const profile = await uploadOnCloudinary(customer.customerPhoto);
@@ -98,6 +85,7 @@ export class CustomerService {
                 residentAddress: String(customer.residentAddress || ''),
                 aadharNo: String(customer.aadharNo || ''),
                 pancardNo: String(customer.pancardNo || ''),
+                challanNumber: String(customer.challanNumber || ''),
                 aadharPhoto: this.aadharCloudinaryURL,
                 panCardPhoto: this.panCardCloudinaryURL,
                 customerPhoto: this.customerCloudinaryURL,
@@ -261,26 +249,46 @@ export class CustomerService {
         const existingCustomer = await Customer.findOne({
             _id: customer._id
         });
-        customer.prizefix = JSON.parse(customer.prizefix as any).map((p: any) => ({
-            productName: p.productName,
-            size: p.size,
-            rate: p.rate,
-        }))
-
-        customer.sites = JSON.parse(customer.sites as any).map((s:any) => ({
-            siteName: s.siteName,
-            siteAddress: s.siteAddress,
-        }))
-
+    
+        // Remove JSON.parse for prizefix
+        if (customer.prizefix) {
+            customer.prizefix = customer.prizefix.map((p: any) => ({
+                productName: p?.productName,
+                size: p?.size,
+                rate: p?.rate,
+            }));
+        }
+    
+        // Remove JSON.parse for sites
+        if (customer.sites) {
+            customer.sites = customer.sites.map((s: any) => ({
+                siteName: s.siteName,
+                siteAddress: s.siteAddress,
+                challanNumber: s.challanNumber
+            }));
+        }
+    
         if (!existingCustomer) {
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Customer"));
         }
-
+    
         const result = await Customer.findByIdAndUpdate(existingCustomer._id, customer, { new: true });
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Customer updated'),
             data: result
+        };
+    }
+
+
+    async getCustomerById(id: string) {
+        const existingCustomer = await Customer.findOne({
+            _id: id
+        });
+        return {
+            statuscode: statuscode.OK,
+            message: MSG.SUCCESS('Customer get'),
+            data: existingCustomer
         };
     }
 

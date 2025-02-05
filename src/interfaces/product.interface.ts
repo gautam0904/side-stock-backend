@@ -5,6 +5,7 @@ export interface IProduct{
     stock:number;
     rented:number;
     loss:number;
+    totalStock:number
 }
 
 export interface PaginatedResponse {

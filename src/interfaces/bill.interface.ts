@@ -3,13 +3,13 @@ interface Product {
     quantity: number;
     rate: number;
     size: string;
-    amount: number;
-    month: number;
-    year: number;
-    previousRestBill: number;
+    amount?: number;
+    month?: number;
+    year?: number;
+    previousRestBill?: number;
     startingDate: Date;
     endingDate: Date | null;
-    dayCount: number;
+    dayCount?: number;
 }
 
 interface MonthlyData {

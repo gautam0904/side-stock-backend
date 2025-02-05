@@ -26,6 +26,7 @@ export class ProductService {
             stock: product.stock,
             rented: product.rented,
             loss: product.loss,
+            totalStock: product.totalStock
         });
 
         return {
@@ -59,16 +60,6 @@ export class ProductService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        {
-                            $project:{
-                             _id: 1,
-                             productName: 1,
-                             size: 1,
-                             stock: 1,
-                             rented: 1,
-                             loss: 1,
-                            }
-                        }
                     ]
                 }
             }

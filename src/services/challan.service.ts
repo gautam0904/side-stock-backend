@@ -8,7 +8,12 @@ import { QueryOptions } from "../interfaces/customerGST.interface.js";
 import mongoose, { PipelineStage } from "mongoose";
 import Bills from "../models/bill.model.js";
 import { IBill } from "../interfaces/bill.interface.js";
+import { CustomerService } from "./customer.service.js";
+import { ICustomer } from "../interfaces/nonGSTmodels.interface.js";
+import { BillService } from "./bill.service.js";
 
+const customerService = new CustomerService();
+const billService = new BillService();
 export class ChallanService {
     // async createChallan(challan: IChallan) {
     //     const [existingChallan] = await Challan.aggregate([{
@@ -207,16 +212,49 @@ export class ChallanService {
         }
 
         challan.products = this.formatProducts(challan.products);
+
         const newChallan = await this.saveChallan(challan);
 
-        await this.processBilling(challan, newChallan);
+        let customer: any = await customerService.getCustomerById(challan.customerId);
+
+        customer = customer.data;
+
+        customer.sites = customer.sites.map((site: any) => {
+            return {
+                siteName: site.siteName,
+                siteAddress: site.siteAddress,
+                challanNumber: site.challanNumber,
+            };
+        });
+
+        customer.prizefix = customer.prizefix.map((prize: any) => {
+            return {
+                productName: prize.productName,
+                size: prize.size,
+                rate: prize.rate,
+            };
+        });
+
+        const cI = customer.sites.findIndex((s: any) => s.siteName === challan.siteName);
+
+        if (cI !== -1) {
+            customer.sites[cI].challanNumber = newChallan.challanNumber;
+
+            const updatedCustomer = await customerService.updateCustomer({
+                _id: customer._id,
+                sites: customer.sites,
+            } as ICustomer);
+
+            await this.processBilling(challan, newChallan);
+        }
 
         return {
             statuscode: statuscode.CREATED,
             message: MSG.SUCCESS('Challan creation'),
-            data: newChallan
+            data: newChallan,
         };
     }
+
 
     async challanExists(challanNmber: string) {
         const challan = await Challan.aggregate([{ $match: { challanNmber } }]);
@@ -243,17 +281,16 @@ export class ChallanService {
     }
 
     async processBilling(challan: IChallan, newChallan: any) {
+        const challanNumber = challan.challanNumber.split('C')[1];
         const existingBill = await Bills.findOne({
             customerId: challan.customerId,
             siteName: challan.siteName
         });
 
-        const billProducts = this.generateBillProducts(challan.products, challan.date);
-        const totalAmount = this.calculateTotal(billProducts);
+       
 
-        existingBill
-            ? await this.updateExistingBill(existingBill, billProducts)
-            : await this.createNewBill(challan, billProducts, totalAmount, newChallan._id);
+        challanNumber == '0' ? await this.updateExistingBill(existingBill, billProducts)
+            : await billService.createBillBychallan(newChallan);
     }
 
     generateBillProducts(products: any, d: any) {
@@ -291,22 +328,65 @@ export class ChallanService {
 
         const aggregationPipeline = [
             {
-                '$match': {
-                    '_id': challanId
-                }
-            }, {
-                '$lookup': {
-                    'from': 'customers',
-                    'localField': 'customerId',
-                    'foreignField': '_id',
-                    'as': 'customerDetails'
-                }
-            }, {
-                '$unwind': '$customerDetails'
+              $facet: {
+                returnChallans: [
+                  {
+                    $match: {
+                      _id: [
+                              new mongoose.Schema.Types.ObjectId(
+                                challanId.toString()
+                              )
+                          ],
+                      challenType: "Return",
+                    },
+                  },
+                  {
+                    $lookup: {
+                      from: "customers",
+                      localField: "customerId",
+                      foreignField: "_id",
+                      as: "customerDetails",
+                    },
+                  },
+                  {
+                    $unwind: "$customerDetails",
+                  },
+                ],
+                deliveryChallan: [
+                  {
+                    $match: {
+                      _id: [
+                        new mongoose.Schema.Types.ObjectId(
+                          challanId.toString()
+                        )
+                    ],
+                      challenType: "Delivery",
+                    },
+                  },
+                  {
+                    $lookup: {
+                      from: "customers",
+                      localField: "customerId",
+                      foreignField: "_id",
+                      as: "customerDetails",
+                    },
+                  },
+                  {
+                    $unwind: "$customerDetails",
+                  },
+                ],
+              },
             }
+          ]
+        const challans = await Challan.aggregate(aggregationPipeline);
+        const returnChallans = challans[0];
+        const deliveryChallans = challans[1];
 
-        ]
-        const challanDetail = await Challan.aggregate(aggregationPipeline)
+        const deliveryProducts = deliveryChallans.map((ch:IChallan)=>{
+          return {...ch.products}
+        });
+
+        
 
         await Bills.create({
             customerName: challanDetail[0].customerDetails.customerName,
@@ -314,8 +394,8 @@ export class ChallanService {
             billNumber: 1,
             damageCharge: challanDetail[0].damageCharge,
             serviceCharge: challanDetail[0].serviceCharge,
-            billName:challanDetail[0].customerDetails.customerName,
-            billAddress:challanDetail[0].customerDetails.billingAddress || 'local',
+            billName: challanDetail[0].customerDetails.customerName,
+            billAddress: challanDetail[0].customerDetails.billingAddress || 'local',
             partnerName: challanDetail[0].customerDetails.partnerName || '',
             partnerMobileNumber: challanDetail[0].customerDetails.partnerMobileNumber || '',
             date: challanDetail[0].date,

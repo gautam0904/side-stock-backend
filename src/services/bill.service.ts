@@ -6,12 +6,14 @@ import Bill from "../models/bill.model.js"
 import mongoose, { PipelineStage } from "mongoose";
 import { PaymentService } from "./payment.service.js";
 import Challan from "../models/challan.model.js";
+import { IChallan } from "../dto/req.dto.js";
+import { Counter } from "../models/counter.model.js";
 
 interface PaginatedResponse {
     statuscode: number;
     message: string;
     data: {
-        billData:any;
+        billData: any;
         bill: any;
         pagination: {
             total: number;
@@ -21,120 +23,226 @@ interface PaginatedResponse {
 }
 
 export class BillService {
-    async createBill(bill: IBill) {
+    async createBillBychallan(challan: IChallan) {
 
         const aggregationPipeline = [
             {
-                '$facet': {
-                    'returnChallans': [
-                        {
-                            '$match': {
-                                '_id': {
-                                    '$in': bill.challans.map((c) => (new mongoose.Schema.Types.ObjectId(c.challanId.toString())))
-                                },
-                                'challenType': 'Return'
-                            }
-                        }, {
-                            '$lookup': {
-                                'from': 'customers',
-                                'localField': 'customerId',
-                                'foreignField': '_id',
-                                'as': 'customerDetails'
-                            }
-                        }, {
-                            '$unwind': '$customerDetails'
-                        }
-                    ],
-                    'anyChallan': [
-                        {
-                            '$match': {
-                                '_id': {
-                                    '$in': bill.challans.map((c) => (new mongoose.Schema.Types.ObjectId(c.challanId.toString())))
-                                }
-                            }
-                        }, {
-                            '$lookup': {
-                                'from': 'customers',
-                                'localField': 'customerId',
-                                'foreignField': '_id',
-                                'as': 'customerDetails'
-                            }
-                        }, {
-                            '$unwind': '$customerDetails'
-                        },
-                    ]
-                }
+              '$match': {
+                '_id': challan._id
+              }
             }, {
-                '$project': {
-                    'challan': {
-                        '$cond': {
-                            'if': {
-                                '$gt': [
-                                    {
-                                        '$size': '$returnChallans'
-                                    }, 0
-                                ]
-                            },
-                            'then': '$returnChallans',
-                            'else': {
-                                '$arrayElemAt': [
-                                    '$anyChallan', 0
-                                ]
-                            }
-                        }
-                    }
-                }
+              '$lookup': {
+                'from': 'customers', 
+                'localField': 'customerId', 
+                'foreignField': '_id', 
+                'as': 'customerDetails'
+              }
             }, {
-                '$replaceRoot': {
-                    'newRoot': {
-                        'results': '$result'
-                    }
-                }
+              '$unwind': '$customerDetails'
             }
-        ]
-        const challanDetail = await Challan.aggregate(aggregationPipeline)
-        let returnChallan = Array.isArray(challanDetail[0].challan) ? challanDetail[0].challan : [];
+          ]
+        const challans = await Challan.aggregate(aggregationPipeline);
+        if (!challans.length) throw new ApiError(statuscode.NOCONTENT, 'Challan not found');
 
-        if (returnChallan.length > 0) {
+        let previousRestBill = 0; 
+        const monthWiseData = challans.map((challan: IChallan) => {
+            const today = new Date();
+            let monthlyProducts: any = [];
 
-            const totals = returnChallan.reduce((acc : any, item: any) => {
-                acc.serviceCharge += item.serviceCharge || 0; 
-                acc.damageCharge += item.damageCharge || 0;  
-                return acc;
-            }, { serviceCharge: 0, damageCharge: 0 });
+            const billProducts = challan.products.map((p)=>(
+                {
+                    productName: p.productName,
+                    quantity: p.quantity,
+                    rate: p.rate,
+                    size: p.size,
+                    startingDate: p.date,
+                    endingDate: null
+                }
+            ))
 
-            bill.serviceCharge = totals.serviceCharge;
-            bill.damageCharge = totals.damageCharge;
+            billProducts.forEach((product) => {
+                const startDate =  new Date(product.startingDate || today);
+                const endDate =  today
+
+                const monthWiseAmounts = this.calculateMonthlyAmounts(startDate, endDate, startDate, endDate, product.rate || 0, product.quantity || 0);
+
+                monthWiseAmounts.forEach((monthData) => {
+                    const firstDayOfMonth = new Date(monthData.year, monthData.month - 1, 1);
+                    const lastDayOfMonth = new Date(monthData.year, monthData.month, 0);
+                    let productStartDate = firstDayOfMonth;
+                    let productEndDate = lastDayOfMonth;
+
+                    if (startDate > firstDayOfMonth) {
+                        productStartDate = startDate
+                    }
+
+                    if (endDate < lastDayOfMonth) {
+                        productEndDate = endDate
+                    }
+
+                    if (monthData.month === today.getMonth() + 1 && monthData.year === today.getFullYear()) {
+                        productEndDate = today;
+                    }
+
+                    productStartDate = productStartDate < new Date(product.startingDate || today) ? new Date(product.startingDate || today) : productStartDate;
+                    if (product.endingDate) {
+                        productEndDate = productEndDate > new Date(product.endingDate) ? new Date(product.endingDate) : productEndDate;
+                    }
+
+                    const dayCount = parseInt((Math.max(0, (productEndDate.getTime() - productStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
+
+                    let totalPaid = 0;
+                   
+
+                    previousRestBill += monthData.amount;
+                    const remainingDue = previousRestBill - totalPaid;
+
+                    monthlyProducts.push({
+                        productName: product.productName,
+                        quantity: product.quantity,
+                        size: product.size,
+                        rate: product.rate,
+                        amount: monthData.amount,
+                        month: monthData.month,
+                        year: monthData.year,
+                        previousRestBill: remainingDue > 0 ? remainingDue : 0,
+                        startingDate: productStartDate,
+                        endingDate: productEndDate,
+                        dayCount: dayCount
+                    });
+                });
+            });
+
+            return monthlyProducts;
+        }).flat();
+
+        // Step 4: Group by year and month and sum the amounts
+        const groupedData = monthWiseData.reduce((acc: any, data: any) => {
+            const key = `${data.year}-${data.month}`;
+            if (!acc[key]) {
+                acc[key] = {
+                    year: data.year,
+                    month: data.month,
+                    totalAmount: 0,
+                    products: []
+                };
+            }
+            acc[key].totalAmount += data.amount;
+            acc[key].products.push(data);
+
+            return acc;
+        }, {});
+
+        const aggregatedData = Object.values(groupedData);
+
+        const finalTotal = aggregatedData.reduce<{ totalAmount: 0 }>((acc: any, data: any) => {
+            acc.totalAmount += data.totalAmount;
+            return acc;
+        }, { totalAmount: 0 });
+
+        const challanDetail = challans[0];
+        if (!challanDetail.customerDetails) {
+            throw new ApiError(statuscode.BADREQUEST, 'Customer details not found');
         }
 
-        const result = await Bill.create({
-            customerName: challanDetail[0].customerDetails.customerName,
-            mobileNumber: challanDetail[0].customerDetails.mobileNumber,
-            challans: bill.challans,
-            billNumber:1,
-            partnerName: challanDetail[0].customerDetails.partnerName || '',
-            partnerMobileNumber: challanDetail[0].customerDetails.partnerMobileNumber || '',
-            date: bill.date,
-            billTo: challanDetail[0].customerDetails.customerName,
-            reference: challanDetail[0].customerDetails.reference,
-            referenceMobileNumber: challanDetail[0].customerDetails.referenceMobileNumber,
-            products: bill.products,
-            billAddress: challanDetail[0].customerDetails.billingAddress,
-            siteName: challanDetail[0].siteName,
-            siteAddress: challanDetail[0].siteAddress,
-            pancard: challanDetail[0].customerDetails.pancard,
-            monthData: bill.monthData,
-            serviceCharge: bill.serviceCharge || 0,
-            damageCharge: bill.damageCharge || 0,
-            totalPayment: bill.totalPayment,
+        const customerDetails = challanDetail.customerDetails;
+
+        const [customerBillCount, siteCount, challanCount] = await Promise.all([
+            this.getNextSequence('customerBill'),
+            this.getNextSequence('site'),
+            this.getNextSequence('challan')
+        ]);
+    
+        // Generate formatted bill number
+        const billNumber = `B${customerBillCount.toString().padStart(3, '0')}S${siteCount.toString().padStart(3, '0')}C${challanCount.toString().padStart(3, '0')}P`;
+
+        // Create bill
+        const newBill = await Bill.create({
+            // Customer Info
+            customerName: customerDetails.customerName,
+            mobileNumber: customerDetails.mobileNumber,
+            partnerName: customerDetails.partnerName || '',
+            partnerMobileNumber: customerDetails.partnerMobileNumber || '',
+            reference: customerDetails.reference,
+            referenceMobileNumber: customerDetails.referenceMobileNumber,
+            
+            // Address Info
+            billAddress: customerDetails.residentAddress || 'local',
+            siteName: challanDetail.siteName,
+            siteAddress: challanDetail.siteAddress,
+            
+            // Financial Info
+            pancard: customerDetails.pancardNo || 'id NULL',
+            damageCharge: challanDetail.damageCharge || 0,
+            serviceCharge: challanDetail.serviceCharge || 0,
+            totalPayment: (finalTotal.totalAmount) || 0,
+            
+            billNumber, 
+            date: new Date(),
+            billTo: customerDetails.customerName,
+            billName: customerDetails.customerName,
+            
+            // Products and Challan Reference
+            products: monthWiseData,
+            challans: [challan._id],
+            monthData: aggregatedData
         });
+        // billData.totalPayment = finalTotal
+
+        // Step 5: Return the response
+
+
+        // let returnChallan = Array.isArray(challans[0].challan) ? challans[0].challan : [];
+
+        // if (returnChallan.length > 0) {
+
+        //     const totals = returnChallan.reduce((acc: any, item: any) => {
+        //         acc.serviceCharge += item.serviceCharge || 0;
+        //         acc.damageCharge += item.damageCharge || 0;
+        //         return acc;
+        //     }, { serviceCharge: 0, damageCharge: 0 });
+
+        //     bill.serviceCharge = totals.serviceCharge;
+        //     bill.damageCharge = totals.damageCharge;
+        // }
+
+        // const result = await Bill.create({
+        //     customerName: challanDetail[0].customerDetails.customerName,
+        //     mobileNumber: challanDetail[0].customerDetails.mobileNumber,
+        //     challans: bill.challans,
+        //     billNumber:1,
+        //     partnerName: challanDetail[0].customerDetails.partnerName || '',
+        //     partnerMobileNumber: challanDetail[0].customerDetails.partnerMobileNumber || '',
+        //     date: bill.date,
+        //     billTo: challanDetail[0].customerDetails.customerName,
+        //     reference: challanDetail[0].customerDetails.reference,
+        //     referenceMobileNumber: challanDetail[0].customerDetails.referenceMobileNumber,
+        //     products: bill.products,
+        //     billAddress: challanDetail[0].customerDetails.billingAddress,
+        //     siteName: challanDetail[0].siteName,
+        //     siteAddress: challanDetail[0].siteAddress,
+        //     pancard: challanDetail[0].customerDetails.pancard,
+        //     monthData: bill.monthData,
+        //     serviceCharge: bill.serviceCharge || 0,
+        //     damageCharge: bill.damageCharge || 0,
+        //     totalPayment: bill.totalPayment,
+        // });
 
         return {
             statuscode: statuscode.CREATED,
             message: MSG.SUCCESS('Bill creation'),
-            data: result
+            data: []
         };
     }
+
+    private async getNextSequence(name: string): Promise<number> {
+        const result = await Counter.findOneAndUpdate(
+          { name },
+          { $inc: { seq: 1 } },
+          { new: true, upsert: true }
+        );
+        return result.seq;
+      }
 
     async getBill(options: any): Promise<PaginatedResponse> {
         const {
@@ -199,10 +307,10 @@ export class BillService {
                     let productStartDate = firstDayOfMonth;
                     let productEndDate = lastDayOfMonth;
 
-                    if (startDate > firstDayOfMonth ) {
+                    if (startDate > firstDayOfMonth) {
                         productStartDate = startDate
                     }
-                    
+
                     if (endDate < lastDayOfMonth) {
                         productEndDate = endDate
                     }
@@ -271,7 +379,7 @@ export class BillService {
             return acc;
         }, {});
 
-        const billData : any = result.data[0] ?? {};
+        const billData: any = result.data[0] ?? {};
         billData.totalPayment = finalTotal
 
         // Step 5: Return the response
@@ -307,19 +415,19 @@ export class BillService {
             let monthEndDate = nextMonthStartDate > endDate ? endDate : new Date(nextMonthStartDate - 1); // End of the current month or the end date
             productStartDate = new Date(productStartDate);
             productEndDate = productEndDate == null ? new Date() : new Date(productEndDate);
-            
-            if (productStartDate > productEndDate  || startDate > endDate) {
-                throw new ApiError(statuscode.BADREQUEST , 'Date range is Wrong')
+
+            if (productStartDate > productEndDate || startDate > endDate) {
+                throw new ApiError(statuscode.BADREQUEST, 'Date range is Wrong')
             }
-            if (startDate > monthStartDate ) {
+            if (startDate > monthStartDate) {
                 monthStartDate = startDate
             }
-            
+
             if (endDate < monthEndDate) {
                 monthEndDate = endDate
             }
-            if ((monthStartDate >= productStartDate ) && (productEndDate >= monthEndDate)) {
-                
+            if ((monthStartDate >= productStartDate) && (productEndDate >= monthEndDate)) {
+
                 const daysInMonth = parseInt((Math.max(0, (monthEndDate.getTime() - monthStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
                 const amount = Number(rate) * Number(quantity) * daysInMonth;
                 monthWiseAmounts.push({
@@ -327,7 +435,7 @@ export class BillService {
                     year: currentYear,
                     amount: amount
                 });
-            }else if ((productStartDate > monthStartDate) && (productEndDate >= monthEndDate)) {
+            } else if ((productStartDate > monthStartDate) && (productEndDate >= monthEndDate)) {
                 const daysInMonth = parseInt((Math.max(0, (monthEndDate.getTime() - productStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
                 const amount = Number(rate) * Number(quantity) * daysInMonth;
                 monthWiseAmounts.push({
@@ -335,7 +443,7 @@ export class BillService {
                     year: currentYear,
                     amount: amount
                 });
-            }else if ((productStartDate > monthStartDate) && (productEndDate < monthEndDate)) {
+            } else if ((productStartDate > monthStartDate) && (productEndDate < monthEndDate)) {
                 const daysInMonth = parseInt((Math.max(0, (productEndDate.getTime() - productStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
                 const amount = Number(rate) * Number(quantity) * daysInMonth;
                 monthWiseAmounts.push({
@@ -343,7 +451,7 @@ export class BillService {
                     year: currentYear,
                     amount: amount
                 });
-            }else if ((monthStartDate >= productStartDate ) &&  (productEndDate < monthEndDate)) {
+            } else if ((monthStartDate >= productStartDate) && (productEndDate < monthEndDate)) {
                 const daysInMonth = parseInt((Math.max(0, (productEndDate.getTime() - monthStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
                 const amount = Number(rate) * Number(quantity) * daysInMonth;
                 monthWiseAmounts.push({

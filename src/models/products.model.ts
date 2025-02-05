@@ -21,6 +21,10 @@ const productsSchema = new mongoose.Schema({
     loss:{
         type: Number,
         required: [true, ERROR_MSG.REQUIRED("Product loss")]
+    },
+    totalStock:{
+        type: Number,
+        required: [true, ERROR_MSG.REQUIRED("Product TOtal")]
     }
 }, { timestamps: true });
 

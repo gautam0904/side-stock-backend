@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import { ERROR_MSG } from "../constants/message.js";
-import Counter from "./counter.model.js";
 
 const billSchema = new mongoose.Schema({
     today: {
@@ -22,7 +21,7 @@ const billSchema = new mongoose.Schema({
         required: [true, ERROR_MSG.REQUIRED("Mobile Number")]
     },
     billNumber: {
-        type: Number,
+        type: String,
         required: [true, ERROR_MSG.REQUIRED("Bill Number")]
     },
     partnerName: {
@@ -70,34 +69,6 @@ const billSchema = new mongoose.Schema({
             type: String,
             required: [true, ERROR_MSG.REQUIRED("Product")]
         },
-        size: {
-            type: String,
-            required: false
-        },
-        quantity: {
-            type: Number,
-            required: false
-        },
-        rate: {
-            type: Number,
-            required: [true, ERROR_MSG.REQUIRED("Product rate")]
-        },
-        startingDate: {
-            type: Date,
-            required: [true, ERROR_MSG.REQUIRED("Starting date")]
-        },
-        endingDate: {
-            type: Date,
-            required: false
-        },
-        amount: {
-            type: Number,
-            required: [true, ERROR_MSG.REQUIRED("Product amount")]
-        },
-        previousRestBill: {
-            type: Number,
-            required: [true, ERROR_MSG.REQUIRED("Product amount")]
-        },
     }],
     monthData: [{
         year: {
@@ -108,9 +79,17 @@ const billSchema = new mongoose.Schema({
             type: Number,
             require: [true, ERROR_MSG.REQUIRED("month")]
         },
-        totalAmount: {
+        monthTotalAmount: {
             type: Number,
             require: [true, ERROR_MSG.REQUIRED("Total Amount")]
+        },
+        previousAmount:{
+            type: Number,
+            require: [true, ERROR_MSG.REQUIRED("Previous Amount")]
+        },
+        monthPayment:{
+            type: Number,
+            require: [true, ERROR_MSG.REQUIRED("Month Payment Amount")]
         },
         products: [{
             productName: {
@@ -141,10 +120,6 @@ const billSchema = new mongoose.Schema({
                 type: Number,
                 required: [true, ERROR_MSG.REQUIRED("Product amount")]
             },
-            previousRestBill: {
-                type: Number,
-                required: [true, ERROR_MSG.REQUIRED("Product amount")]
-            },
         }],
     }],
 
@@ -164,22 +139,5 @@ const billSchema = new mongoose.Schema({
 
 const Bills = mongoose.model("Bills", billSchema);
 
-billSchema.pre('save', async function (next) {
-    if (!this.billNumber) {
-        try {
-            const counter = await Counter.findOneAndUpdate(
-                { name: 'billNumber' },
-                { $inc: { sequence_value: 1 } },
-                { new: true, upsert: true }
-            );
-            this.billNumber = counter.sequence_value;
-            next();
-        } catch (err) {
-            next(err);
-        }
-    } else {
-        next();
-    }
-});
 
 export default Bills;
