@@ -7,7 +7,7 @@ const productsSchema = new mongoose.Schema({
         required: [true, ERROR_MSG.REQUIRED("Product name")]
     },
     size: {
-        type: Number,
+        type: String,
         required: [true, ERROR_MSG.REQUIRED("Product Size")]
     },
     stock:{
@@ -21,6 +21,10 @@ const productsSchema = new mongoose.Schema({
     loss:{
         type: Number,
         required: [true, ERROR_MSG.REQUIRED("Product loss")]
+    },
+    totalStock:{
+        type: Number,
+        required: [true, ERROR_MSG.REQUIRED("Product TOtal")]
     }
 }, { timestamps: true });
 

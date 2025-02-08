@@ -2,18 +2,30 @@ import { ERROR_MSG, MSG } from "../constants/message.js";
 import { statuscode } from "../constants/status.js";
 import { IPurchase, PaginatedResponse, QueryOptions } from "../interfaces/purchaseGST.interface.js";
 import PurchaseGST from "../models/purchaseGST.model.js";
+import Product from "../models/products.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { PipelineStage } from 'mongoose';
 
 export class PurchaseService {
     async createPurchase(purchaseData: IPurchase){
+
         const existingPurchase= await PurchaseGST.findOne({
-            billNumber: purchaseData.billNumber
+            billNumber: purchaseData.billNumber,
         });
 
         if(existingPurchase){
             throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.EXISTS('bill number'))
         }
+
+        const databaseProduct = purchaseData.products.map((p)=>{
+            return {
+                productName: p.productName,
+                quantity: p.quantity,
+                rate: p.rate,
+                amount: p.amount,
+                size : p.size
+            }
+        });        
 
         const result =  await PurchaseGST.create({
             GSTnumber: purchaseData.GSTnumber,
@@ -22,7 +34,7 @@ export class PurchaseService {
             companyName: purchaseData.companyName,
             supplierName: purchaseData.supplierName,
             supplierNumber: purchaseData.supplierNumber,
-            products: purchaseData.products,
+            products: databaseProduct,
             transportAndCasting: purchaseData.transportAndCasting,
             amount: purchaseData.amount,
             sgst: purchaseData.sgst,
@@ -30,6 +42,25 @@ export class PurchaseService {
             igst: purchaseData.igst,
             totalAmount: purchaseData.totalAmount
         });
+        
+        const updatePromises = purchaseData.products.map((product) => ({
+            updateOne: {
+              filter: { 
+                productName: product.productName.trim(),  
+                size: product.size.trim()  
+              },
+              update: {
+                $inc: { stock: product.quantity }
+              },
+            },
+          }));
+          
+          try {
+            const result: any = await Product.bulkWrite(updatePromises);
+          } catch (err) {
+            console.error("Error during bulk update:", err);
+          }
+          
 
         return {
             statuscode: statuscode.CREATED,
@@ -40,14 +71,10 @@ export class PurchaseService {
 
     async getPurchase(options: QueryOptions): Promise<PaginatedResponse> {
         const {
-            page = 1,
-            limit = 10,
             sortBy = 'createdAt',
             sortOrder = 'desc',
             search = ''
         } = options;
-
-        const skip = (page - 1) * Number(limit);
 
         const pipeline: PipelineStage[] = [
             search ? {
@@ -69,13 +96,22 @@ export class PurchaseService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        { $skip: skip },
-                        { $limit: Number(limit) },
                         {
-                            $project: {
-                                _id: 1,
-                                GSTnumber: 1,
-                               
+                            $project:{
+                             _id: 1,
+                             GSTnumber:1,
+                             billNumber: 1,
+                             date: 1,
+                             companyName: 1,
+                             supplierName: 1,
+                             supplierNumber: 1,
+                             products: 1,
+                             transportAndCasting: 1,
+                             amount: 1,
+                             sgst: 1,
+                             cgst: 1,
+                             igst: 1,
+                             totalAmount: 1
                             }
                         }
                     ]
@@ -86,7 +122,6 @@ export class PurchaseService {
         const [result] = await PurchaseGST.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
-        const totalPages = Math.ceil(total / Number(limit));
 
         return {
             statuscode: statuscode.OK,
@@ -95,9 +130,6 @@ export class PurchaseService {
                 purchaseBills: result.data,
                 pagination: {
                     total,
-                    currentPage: page,
-                    totalPages,
-                    limit
                 },
                 metadata: {
                     lastUpdated: new Date(),
@@ -111,14 +143,10 @@ export class PurchaseService {
     
     async getPurchaseByName(options: QueryOptions){
         const {
-            page = 1,
-            limit = 10,
             sortBy = 'createdAt',
             sortOrder = 'desc',
             search = ''
         } = options;
-
-        const skip = (page - 1) * Number(limit);
 
         const pipeline: PipelineStage[] = [
             search ? {
@@ -148,8 +176,6 @@ export class PurchaseService {
                     ],
                     data: [
                         { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
-                        { $skip: skip },
-                        { $limit: Number(limit) },
                     ]
                 }
             }
@@ -158,8 +184,6 @@ export class PurchaseService {
         const [result] = await PurchaseGST.aggregate(pipeline);
 
         const total = result.metadata[0]?.total || 0;
-        const totalPages = Math.ceil(total / Number(limit));
-
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS("Purchase retrieved"),
@@ -167,9 +191,6 @@ export class PurchaseService {
                 customers: result.data,
                 pagination: {
                     total,
-                    currentPage: page,
-                    totalPages,
-                    limit
                 },
                 metadata: {
                     lastUpdated: new Date(),
@@ -182,15 +203,8 @@ export class PurchaseService {
     }
 
     async updatePurchase(purchaseData: IPurchase) {
-        const existingPurchase = await PurchaseGST.findOne({
-            billNumber: purchaseData.billNumber
-        });
-
-        if (!existingPurchase) {
-            throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Purchase"));
-        }
-
-        const result = await PurchaseGST.findByIdAndUpdate(existingPurchase._id, purchaseData, { new: true });
+      
+        const result = await PurchaseGST.findByIdAndUpdate(purchaseData._id, purchaseData, { new: true });
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Purchase updated'),
@@ -198,15 +212,8 @@ export class PurchaseService {
         };
     }
     async deletePurchase( id: string) {
-        const existingPurchase = await PurchaseGST.findOne({
-            _id: id
-        });
-
-        if (!existingPurchase) {
-            throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.NOT_FOUND("Purchase"));
-        }
-
-        const result = await PurchaseGST.findByIdAndDelete(existingPurchase._id);
+    
+        const result = await PurchaseGST.findByIdAndDelete(id);
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS('Purchase deleted'),

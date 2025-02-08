@@ -10,24 +10,22 @@ export interface ISale {
     pancard: string;
     products:[{
         productName: string;
-        size: number;
-        quantity: number;
-        rate: number;
+        size: Number;
+        quantity: Number;
+        rate: Number;
         startingDate: Date;
         endingDate: Date;
-        amount: number;
+        amount: Number;
     }];
     transportAndCasting: number;
     amount: number;
-    sgst: number;
+    sgst: Number;
     cgst: Number;
     igst: Number;
     totalAmount: Number;
 }
 
 export interface QueryOptions {
-    page?: number;
-    limit?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     search?: string;
@@ -40,9 +38,6 @@ export interface PaginatedResponse {
         saleBills: ISale[];
         pagination: {
             total: number;
-            currentPage: number;
-            totalPages: number;
-            limit: number;
         };
         metadata: any;
     }

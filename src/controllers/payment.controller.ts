@@ -1,56 +1,56 @@
 import { Request, Response } from "express";
-import { PurchaseService } from "../services/purchaseGST.service.js";
-import { IPurchase } from "../interfaces/purchaseGST.interface.js"; 
+import { PaymentService } from "../services/payment.service.js";
+import { IPayment } from "../interfaces/payment.interface.js"; 
 import { statuscode } from "../constants/status.js";
 import { ERROR_MSG } from "../constants/message.js";
 
-const purchaseService = new PurchaseService();
+const purchaseService = new PaymentService();
 
-export const createPurchase = async (req: Request, res: Response) => {
+export const createPayment = async (req: Request, res: Response) => {
     try {
-        const purchaseData: IPurchase = req.body;
-        const createdPurchase = await purchaseService.createPurchase(purchaseData);
-        res.status(createdPurchase.statuscode).json(createdPurchase);
+        const purchaseData: IPayment = req.body;
+        const createdPayment = await purchaseService.createPayment(purchaseData);
+        res.status(createdPayment.statuscode).json(createdPayment);
     } catch (error) {
         res.status(error.statuscode || statuscode.INTERNALSERVERERROR).json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });
     }
 }
 
-export const getPurchase = async (req: Request, res: Response) => {
+export const getPayment = async (req: Request, res: Response) => {
     try {
         const query = req.query;
-        const purchaseBills = await purchaseService.getPurchase(query);
+        const purchaseBills = await purchaseService.getPayment(query);
         res.status(purchaseBills.statuscode).json(purchaseBills);
     } catch (error) {
         res.status(error.statuscode || statuscode.INTERNALSERVERERROR).json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });
     }
 }
 
-export const getPurchaseByName = async (req: Request, res: Response) => {
+export const getPaymentByName = async (req: Request, res: Response) => {
     try {
         const purchseData = req.query;
-        const purchasBills = await purchaseService.getPurchaseByName(purchseData);
+        const purchasBills = await purchaseService.getPaymentByName(purchseData);
         res.status(purchasBills.statuscode).json(purchasBills);
     } catch (error) {
         res.status(error.statuscode || statuscode.INTERNALSERVERERROR).json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });
     }
 }
 
-export const updateParchase = async (req: Request, res: Response) => {
+export const updatePayment = async (req: Request, res: Response) => {
     try {
-        const purchaseData: IPurchase = req.body;
-        const updatedPurchase = await purchaseService.updatePurchase(purchaseData);
-        res.status(updatedPurchase.statuscode).json(updatedPurchase);
+        const purchaseData: IPayment = req.body;
+        const updatedPayment = await purchaseService.updatePayment(purchaseData);
+        res.status(updatedPayment.statuscode).json(updatedPayment);
     } catch (error) {
         res.status(error.statuscode || statuscode.INTERNALSERVERERROR).json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });
     }
 }
 
-export const deletePurchase = async (req: Request, res: Response) => {
+export const deletePayment = async (req: Request, res: Response) => {
     try {
         const purchaseId = req.params.id;
-        const deletedPurchase = await purchaseService.deletePurchase(purchaseId);
-        res.status(deletedPurchase.statuscode).json(deletedPurchase);
+        const deletedPayment = await purchaseService.deletePayment(purchaseId);
+        res.status(deletedPayment.statuscode).json(deletedPayment);
     } catch (error) {
         res.status(error.statuscode || statuscode.INTERNALSERVERERROR).json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });
     }

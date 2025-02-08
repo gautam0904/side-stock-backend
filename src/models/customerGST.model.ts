@@ -1,22 +1,22 @@
 import mongoose from "mongoose";
 import { ERROR_MSG } from "../constants/message.js";
 
-const customerGSTSchema = new mongoose.Schema({
+const paymentSchema = new mongoose.Schema({
     GSTnumber: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("GST number")]
+        required: false
     },
     panCardNumber: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("PAN Card number")]
+        required: false
     },
     date: {
         type: Date,
-        required: [true, ERROR_MSG.REQUIRED("Date")] 
+        required: false
     },
     billTo: {
         type: String,
-        required: [true, ERROR_MSG.REQUIRED("Bill To")]
+        required: false
     },
     customerName: {
         type: String,
@@ -40,6 +40,6 @@ const customerGSTSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-const CustomerGST = mongoose.model("CustomerGST", customerGSTSchema);
+const Payments = mongoose.model("Payments", paymentSchema);
 
-export default CustomerGST;
+export default Payments;

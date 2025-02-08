@@ -2,8 +2,6 @@ export interface ICustomer {
     _id?: string;
     customerName: string;
     mobileNumber: string;
-    siteName: string;
-    siteAddress: string;
     partnerName: string;
     partnerMobileNumber: string;
     reference: string;
@@ -14,19 +12,25 @@ export interface ICustomer {
     aadharPhoto: string;
     panCardPhoto: string;
     customerPhoto: string;
+    challanNumber: string;
     prizefix: Iprizefix[];
+    sites: ISite[];
+    GSTnumber: string;
+    panCardNumber: string;
+    billTo: string;
+    billingAddress: string;
+    date: string;
 }
 
 interface Iprizefix {
-    productId: string;
-    size: number;
+    productName: string;
+    size: string;
     rate: number;
 }
 
 export interface ISite {
     siteName: string;
     siteAddress: string;
-    customerId?: string;
-    customerGSTId?: string;
+    challanNumber:string;
 }
 

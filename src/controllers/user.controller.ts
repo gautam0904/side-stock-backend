@@ -9,7 +9,6 @@ const userService = new UserService();
 export const signup = async (req: Request, res: Response) => {
     try {
         const signupData: IUser = req.body;
-        console.log('sign up the user',signupData);
         const createdUser = await userService.createUser(signupData);
         res.status(createdUser.statuscode).json(createdUser);
     } catch (error) {

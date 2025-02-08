@@ -50,15 +50,48 @@ const customerSchema = new mongoose.Schema({
         type: String,
         required: false
     },
-    prizefix:[{
-        productId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Products",
-            required: [true, ERROR_MSG.REQUIRED("Product ID")]
+    GSTnumber: {
+        type: String,
+        required: false
+    },
+    panCardNumber: {
+        type: String,
+        required: false
+    },
+    date: {
+        type: Date,
+        required: false
+    },
+    billTo: {
+        type: String,
+        required: false
+    },
+    billingAddress: {
+        type: String,
+        required: false
+    },
+    sites: [{
+        siteName: {
+            type: String,
+            required: false
+        },
+        siteAddress: {
+            type: String,
+            required: false
+        },
+        challanNumber:{
+            type: String,
+            required: true
+        }
+    }],
+    prizefix: [{
+        productName: {
+            type: String,
+            required: false
         },
         size: {
-            type: Number,
-            required: [true, ERROR_MSG.REQUIRED("Size")]
+            type: String,
+            required: false
         },
         rate: {
             type: Number,

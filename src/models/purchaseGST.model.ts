@@ -8,6 +8,7 @@ const purchaseGSTSchema = new mongoose.Schema({
     },
     billNumber: {
         type: String,
+        unique: true,
         required: [true, ERROR_MSG.REQUIRED("Bill number")]
     },
     date: {
@@ -42,11 +43,15 @@ const purchaseGSTSchema = new mongoose.Schema({
         amount: {
             type: Number,
             required: [true, ERROR_MSG.REQUIRED("Product amount")]
-        }
+        },
+        size: {
+            type: String,
+            required: [true, ERROR_MSG.REQUIRED("Product size")]
+        },
     }],
     transportAndCasting: {
         type: Number,
-        required: [true, ERROR_MSG.REQUIRED("Transport and casting")]
+        default: 0
     },
     amount: {
         type: Number,
