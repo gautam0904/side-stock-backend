@@ -6,16 +6,6 @@ import { ERROR_MSG } from "../constants/message.js";
 
 const billService = new BillService();
 
-export const createBill = async (req: Request, res: Response) => {
-    try {
-        const billData: IBill = req.body;
-        const createdBill = await billService.createBill(billData);
-        res.status(createdBill.statuscode).json(createdBill);
-    } catch (error) {
-        res.status(error.statuscode || statuscode.INTERNALSERVERERROR).json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });
-    }
-}
-
 export const getBill = async (req: Request, res: Response) => {
     try {
         const query = req.query;
