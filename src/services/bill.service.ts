@@ -288,7 +288,6 @@ export class BillService {
             paymentDataMap = await p.getPaymentForBill(result.data[0].billNumber);
             paymentDataMap = paymentDataMap.data.payments;
         }
-
         // Step 3: Calculate month-wise data, day count, and track previous due payments
         let previousRestBill = 0; // Initialize the previous rest bill to track remaining payments
         const monthWiseData = result.data.map((bill: IBill) => {
@@ -460,10 +459,6 @@ export class BillService {
                     amount: amount
                 });
             }
-
-
-
-
             currentMonthIndex++;
             if (currentMonthIndex > 11) {
                 currentMonthIndex = 0;
@@ -471,7 +466,6 @@ export class BillService {
             }
             currentMonth = new Date(currentYear, currentMonthIndex, 1);
         }
-
         return monthWiseAmounts;
     }
 
