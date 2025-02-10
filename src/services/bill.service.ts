@@ -147,14 +147,12 @@ export class BillService {
 
         const customerDetails = challanDetail.customerDetails;
 
-        const [customerBillCount, siteCount, challanCount] = await Promise.all([
+        const [customerBillCount] = await Promise.all([
             this.getNextSequence('customerBill'),
-            this.getNextSequence('site'),
-            this.getNextSequence('challan')
         ]);
     
         // Generate formatted bill number
-        const billNumber = `B${customerBillCount.toString().padStart(3, '0')}S${siteCount.toString().padStart(3, '0')}C${challanCount.toString().padStart(3, '0')}P`;
+        const billNumber = `B${customerBillCount.toString().padStart(3, '0')}${challan.challanNumber}P`;
 
         // Create bill
         const newBill = await Bill.create({
@@ -187,51 +185,10 @@ export class BillService {
             challans: [challan._id],
             monthData: aggregatedData
         });
-        // billData.totalPayment = finalTotal
-
-        // Step 5: Return the response
-
-
-        // let returnChallan = Array.isArray(challans[0].challan) ? challans[0].challan : [];
-
-        // if (returnChallan.length > 0) {
-
-        //     const totals = returnChallan.reduce((acc: any, item: any) => {
-        //         acc.serviceCharge += item.serviceCharge || 0;
-        //         acc.damageCharge += item.damageCharge || 0;
-        //         return acc;
-        //     }, { serviceCharge: 0, damageCharge: 0 });
-
-        //     bill.serviceCharge = totals.serviceCharge;
-        //     bill.damageCharge = totals.damageCharge;
-        // }
-
-        // const result = await Bill.create({
-        //     customerName: challanDetail[0].customerDetails.customerName,
-        //     mobileNumber: challanDetail[0].customerDetails.mobileNumber,
-        //     challans: bill.challans,
-        //     billNumber:1,
-        //     partnerName: challanDetail[0].customerDetails.partnerName || '',
-        //     partnerMobileNumber: challanDetail[0].customerDetails.partnerMobileNumber || '',
-        //     date: bill.date,
-        //     billTo: challanDetail[0].customerDetails.customerName,
-        //     reference: challanDetail[0].customerDetails.reference,
-        //     referenceMobileNumber: challanDetail[0].customerDetails.referenceMobileNumber,
-        //     products: bill.products,
-        //     billAddress: challanDetail[0].customerDetails.billingAddress,
-        //     siteName: challanDetail[0].siteName,
-        //     siteAddress: challanDetail[0].siteAddress,
-        //     pancard: challanDetail[0].customerDetails.pancard,
-        //     monthData: bill.monthData,
-        //     serviceCharge: bill.serviceCharge || 0,
-        //     damageCharge: bill.damageCharge || 0,
-        //     totalPayment: bill.totalPayment,
-        // });
-
         return {
             statuscode: statuscode.CREATED,
             message: MSG.SUCCESS('Bill creation'),
-            data: []
+            data: newBill
         };
     }
 
