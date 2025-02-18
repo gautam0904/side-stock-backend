@@ -24,20 +24,20 @@ export class CustomerService {
             if (existingCustomer) {
                 throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.EXISTS('customer'));
             }
-                if (typeof customer.prizefix === 'string') {
-                    customer.prizefix = JSON.parse(customer.prizefix);
-                } else if (Array.isArray(customer.prizefix)) {
-                    customer.prizefix = customer.prizefix;
-                } else if (typeof customer.prizefix === 'object') {
-                    customer.prizefix = [customer.prizefix];
-                } else {
-                    customer.prizefix = [];
-                }
-                customer.prizefix = customer.prizefix.map((p: any) => ({
-                    productName: String(p.productName || ''),
-                    size: String(p.size || ''),
-                    rate: Number(p.rate) || 0
-                }));
+                // if (typeof customer.prizefix === 'string') {
+                //     customer.prizefix = JSON.parse(customer.prizefix);
+                // } else if (Array.isArray(customer.prizefix)) {
+                //     customer.prizefix = customer.prizefix;
+                // } else if (typeof customer.prizefix === 'object') {
+                //     customer.prizefix = [customer.prizefix];
+                // } else {
+                //     customer.prizefix = [];
+                // }
+                // customer.prizefix = customer.prizefix.map((p: any) => ({
+                //     productName: String(p.productName || ''),
+                //     size: String(p.size || ''),
+                //     rate: Number(p.rate) || 0
+                // }));
              
 
                 if (typeof customer.sites === 'string') {
@@ -54,7 +54,12 @@ export class CustomerService {
                 customer.sites = customer.sites.map((site: any) => ({
                     siteName: String(site.siteName || ''),
                     siteAddress: String(site.siteAddress || ''),
-                    challanNumber: String(site.challanNumber)
+                    challanNumber: String(site.challanNumber),
+                    prizefix : site.prizefix?.map((p: any) => ({
+                        productName: p?.productName,
+                        size: p?.size,
+                        rate: p?.rate,
+                    }))
                 }));
             
 
@@ -89,7 +94,6 @@ export class CustomerService {
                 aadharPhoto: this.aadharCloudinaryURL,
                 panCardPhoto: this.panCardCloudinaryURL,
                 customerPhoto: this.customerCloudinaryURL,
-                prizefix: customer.prizefix,
                 sites: customer.sites
             });
 
@@ -250,21 +254,17 @@ export class CustomerService {
             _id: customer._id
         });
     
-        // Remove JSON.parse for prizefix
-        if (customer.prizefix) {
-            customer.prizefix = customer.prizefix.map((p: any) => ({
-                productName: p?.productName,
-                size: p?.size,
-                rate: p?.rate,
-            }));
-        }
-    
         // Remove JSON.parse for sites
         if (customer.sites) {
             customer.sites = customer.sites.map((s: any) => ({
                 siteName: s.siteName,
                 siteAddress: s.siteAddress,
-                challanNumber: s.challanNumber
+                challanNumber: s.challanNumber,
+                prizefix : s.prizefix?.map((p: any) => ({
+                    productName: p?.productName,
+                    size: p?.size,
+                    rate: p?.rate,
+                }))
             }));
         }
     

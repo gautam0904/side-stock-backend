@@ -82,22 +82,23 @@ const customerSchema = new mongoose.Schema({
         challanNumber:{
             type: String,
             required: true
-        }
+        },
+        prizefix: [{
+            productName: {
+                type: String,
+                required: false
+            },
+            size: {
+                type: String,
+                required: false
+            },
+            rate: {
+                type: Number,
+                required: [true, ERROR_MSG.REQUIRED("Rate")]
+            }
+        }]
     }],
-    prizefix: [{
-        productName: {
-            type: String,
-            required: false
-        },
-        size: {
-            type: String,
-            required: false
-        },
-        rate: {
-            type: Number,
-            required: [true, ERROR_MSG.REQUIRED("Rate")]
-        }
-    }]
+   
 
 }, { timestamps: true });
 
