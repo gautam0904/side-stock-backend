@@ -18,6 +18,10 @@ const productsSchema = new mongoose.Schema({
         type: Number,
         required: [true, ERROR_MSG.REQUIRED("Product rented")]
     },
+    rate:{
+        type: Number,
+        required: [true, ERROR_MSG.REQUIRED("Product rate")]
+    },
     loss:{
         type: Number,
         required: [true, ERROR_MSG.REQUIRED("Product loss")]

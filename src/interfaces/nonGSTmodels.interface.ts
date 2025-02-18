@@ -13,7 +13,6 @@ export interface ICustomer {
     panCardPhoto: string;
     customerPhoto: string;
     challanNumber: string;
-    prizefix: Iprizefix[];
     sites: ISite[];
     GSTnumber: string;
     panCardNumber: string;
@@ -32,5 +31,6 @@ export interface ISite {
     siteName: string;
     siteAddress: string;
     challanNumber:string;
+    prizefix: Iprizefix[];
 }
 

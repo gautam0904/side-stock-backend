@@ -23,10 +23,11 @@ export class ProductService {
         const result = await Product.create({
             productName: product.productName,
             size: product.size,
-            stock: product.stock,
+            stock: product.totalStock,
             rented: product.rented,
             loss: product.loss,
-            totalStock: product.totalStock
+            totalStock: product.totalStock,
+            rate: product.rate,
         });
 
         return {

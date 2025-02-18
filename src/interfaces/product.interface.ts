@@ -4,8 +4,10 @@ export interface IProduct{
     size: string;
     stock:number;
     rented:number;
+    rate : number;
     loss:number;
-    totalStock:number
+    totalStock:number;
+    inStock: number;
 }
 
 export interface PaginatedResponse {
