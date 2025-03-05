@@ -12,6 +12,7 @@ export interface ICustomerGST {
      aadharPhoto: string;
      panCardPhoto: string;
      customerPhoto: string;
+     challanNumber: string;
      prizefix: Iprizefix[];
      sites: ISite[];
      GSTnumber: string;

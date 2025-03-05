@@ -354,10 +354,7 @@ export class BillService {
             }
         };
     }
-
-
-
-    // Helper function to calculate monthly amounts for a product
+                               
     private calculateMonthlyAmounts(startDate: Date, endDate: Date, productStartDate: Date, productEndDate: Date | null, rate: Number, quantity: Number) {
         const monthWiseAmounts = [];
 
