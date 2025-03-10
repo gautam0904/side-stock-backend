@@ -11,7 +11,6 @@ import { IBill } from "../interfaces/bill.interface.js";
 import { CustomerService } from "./customer.service.js";
 import { ICustomer } from "../interfaces/nonGSTmodels.interface.js";
 import { BillService } from "./bill.service.js";
-import Products from "../models/products.model.js";
 
 const customerService = new CustomerService();
 const billService = new BillService();
@@ -55,10 +54,6 @@ export class ChallanService {
                 sites: customer.sites,
             } as ICustomer);
 
-            await this.updateProductStock(challan, newChallan);
-
-            await this.updatePrizefix(challan, customer);
-
             await this.processBilling(challan, newChallan);
         }
 
@@ -67,70 +62,6 @@ export class ChallanService {
             message: MSG.SUCCESS('Challan creation'),
             data: newChallan,
         };
-    }
-
-    async updatePrizefix(challan: IChallan, customer: ICustomer) {
-        const siteIndex = customer.sites.findIndex((site: any) => site.siteName === challan.siteName);
-        
-        if (siteIndex === -1) {
-            throw new ApiError(statuscode.NOTFOUND, 'Site not found');
-        }
-    
-        // Iterate through each product in the challan and update prizefix
-        for (const product of challan.products) {
-            let { productName, size, quantity, rate } = product;
-            
-            quantity= product.quantity || 0;
-            rate= product.rate || 0;
-    
-            const prizefixIndex = customer.sites[siteIndex].prizefix.findIndex(
-                (prize: any) => prize.productName === productName && prize.size === size
-            );
-    
-            if (prizefixIndex !== -1) {
-                customer.sites[siteIndex].prizefix[prizefixIndex].quantity += quantity;
-            } else {
-                customer.sites[siteIndex].prizefix.push({
-                    productName,
-                    size,
-                    rate,
-                    quantity, 
-                });
-            }
-        }
-    
-        await customerService.updateCustomer({
-           ...customer
-        } );
-    }
-    
-
-    async updateProductStock(challan: IChallan, newChallan: any) {
-        for (const product of challan.products) {
-            let { productName, size, quantity } = product;
-
-            quantity = product.quantity || 0
-    
-            const productDoc = await Products.findOne({ productName, size });
-    
-            if (!productDoc) {
-                throw new ApiError(statuscode.NOTFOUND, ERROR_MSG.NOT_FOUND('Product'));
-            }
-    
-            if (challan.type === 'delivery') {
-                if (productDoc.stock < quantity) {
-                    throw new ApiError(statuscode.BADREQUEST, "There no product available for this quantity");
-                }
-                productDoc.stock -= quantity;
-                productDoc.rented += quantity;  
-            } else if (challan.type === 'return') {
-                productDoc.stock += quantity;
-                productDoc.rented -= quantity;  
-            } else {
-                throw new ApiError(statuscode.BADREQUEST, 'Invalid challan type');
-            }
-            await productDoc.save();
-        }
     }
 
 
