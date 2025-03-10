@@ -25,6 +25,7 @@ interface Iprizefix {
     productName: string;
     size: string;
     rate: number;
+    quantity: number
 }
 
 export interface ISite {

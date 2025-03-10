@@ -95,6 +95,10 @@ const customerSchema = new mongoose.Schema({
             rate: {
                 type: Number,
                 required: [true, ERROR_MSG.REQUIRED("Rate")]
+            },
+            quantity:{
+                type: Number,
+                required: false, 
             }
         }]
     }],
