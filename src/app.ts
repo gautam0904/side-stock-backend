@@ -12,6 +12,7 @@ import productRoutes from './routes/product.routes.js';
 import challanRoutes from './routes/challan.routes.js';
 import billRoutes from './routes/bill.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
+import msgRoutes from './routes/whatrsapp.routes.js';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use("/api/v1/product", productRoutes);
 app.use("/api/v1/challan", challanRoutes);
 app.use("/api/v1/bill", billRoutes);
 app.use("/api/v1/payment", paymentRoutes);
+app.use("/api/v1/whatsapp", msgRoutes);
 
 const PORT = process.env.PORT || 4000;
 
