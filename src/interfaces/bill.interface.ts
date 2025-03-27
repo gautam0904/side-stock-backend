@@ -1,3 +1,5 @@
+import { IChallan } from "../dto/req.dto.js";
+
 interface Product {
     productName: string;
     quantity: number;
@@ -22,7 +24,7 @@ interface MonthlyData {
 
 export interface IBill {
     _id?: string;
-    challans: [{challanId : String}];
+    challans: IChallan[];
     customerName: string;
     mobileNumber: string;
     billNumber: Number;

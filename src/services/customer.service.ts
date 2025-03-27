@@ -23,22 +23,7 @@ export class CustomerService {
 
             if (existingCustomer) {
                 throw new ApiError(statuscode.BADREQUEST, ERROR_MSG.EXISTS('customer'));
-            }
-                // if (typeof customer.prizefix === 'string') {
-                //     customer.prizefix = JSON.parse(customer.prizefix);
-                // } else if (Array.isArray(customer.prizefix)) {
-                //     customer.prizefix = customer.prizefix;
-                // } else if (typeof customer.prizefix === 'object') {
-                //     customer.prizefix = [customer.prizefix];
-                // } else {
-                //     customer.prizefix = [];
-                // }
-                // customer.prizefix = customer.prizefix.map((p: any) => ({
-                //     productName: String(p.productName || ''),
-                //     size: String(p.size || ''),
-                //     rate: Number(p.rate) || 0
-                // }));
-             
+            }            
 
                 if (typeof customer.sites === 'string') {
                     customer.sites = JSON.parse(customer.sites);
@@ -90,7 +75,6 @@ export class CustomerService {
                 residentAddress: String(customer.residentAddress || ''),
                 aadharNo: String(customer.aadharNo || ''),
                 pancardNo: String(customer.pancardNo || ''),
-                challanNumber: String(customer.challanNumber || ''),
                 aadharPhoto: this.aadharCloudinaryURL,
                 panCardPhoto: this.panCardCloudinaryURL,
                 customerPhoto: this.customerCloudinaryURL,
@@ -195,41 +179,37 @@ export class CustomerService {
             search = '',
             name = ''
         } = options;
-
-        const pipeline: PipelineStage[] = [
-            // Apply $match only if `name` is provided and non-empty
-            ...(name ? [{
+    
+        const matchStage: PipelineStage | null = name
+            ? {
                 $match: {
-                    $or: [
-                        {
-                            customerName: {
-                                $regex: name, $options: 'i'  // Case-insensitive match
-                            }
-                        }
-                    ]
+                    customerName: {
+                        $regex: `^${name}`, 
+                        $options: 'i'        
+                    }
                 }
-            }] : []),
-
+            }
+            : null;
+    
+        const pipeline: PipelineStage[] = [
+            ...(matchStage ? [matchStage] : []), 
+    
             {
                 $facet: {
                     metadata: [
-                        { $count: 'total' }
+                        { $count: 'total' }  
                     ],
                     data: [
-                        { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
+                        { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } }  
                     ]
                 }
             }
         ];
-
-        // Filter out empty stages (like if there's no $match applied)
-        const filteredPipeline = pipeline.filter(Boolean) as PipelineStage[];
-
-        // Run the aggregation pipeline
-        const [result] = await Customer.aggregate(filteredPipeline);
-
+    
+        const [result] = await Customer.aggregate(pipeline);
+    
         const total = result.metadata[0]?.total || 0;
-
+    
         return {
             statuscode: statuscode.OK,
             message: MSG.SUCCESS("Customers retrieved"),
@@ -240,13 +220,13 @@ export class CustomerService {
                 },
                 metadata: {
                     lastUpdated: new Date(),
-                    filterApplied: !!search,
+                    filterApplied: !!name,  
                     sortField: sortBy,
                     sortDirection: sortOrder
                 }
             }
         };
-    }
+    }    
 
 
     async updateCustomer(customer: ICustomer) {

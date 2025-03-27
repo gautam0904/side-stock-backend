@@ -79,6 +79,14 @@ const customerSchema = new mongoose.Schema({
             type: String,
             required: false
         },
+        siteSuperwiserName:{
+            type: String,
+            required: false
+        },
+        siteSuperwiserNumber:{
+            type: String,
+            required: false
+        },
         challanNumber:{
             type: String,
             required: true
