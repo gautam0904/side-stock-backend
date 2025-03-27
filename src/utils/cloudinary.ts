@@ -17,6 +17,8 @@ const deleteFileIfExists = (path: string) => {
 
 const uploadOnCloudinary = async (localpath: string) => {
   try {
+    console.log(localpath);
+    
     if (!localpath) throw new ApiError(statuscode.NOTACCEPTABLE, "No file path provided.");
 
     const stats = fs.statSync(localpath);

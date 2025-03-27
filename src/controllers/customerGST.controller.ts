@@ -22,9 +22,7 @@ export const createCustomer = async (req: Request, res: Response) => {
         customerPhoto = customerData.customerPhoto = files?.customerPhoto?.[0].path
 
         // Parse JSON strings if needed
-        if (typeof customerData.prizefix === 'string') {
-            customerData.prizefix = JSON.parse(customerData.prizefix);
-        }
+        
         if (typeof customerData.sites === 'string') {
             customerData.sites = JSON.parse(customerData.sites);
         }
