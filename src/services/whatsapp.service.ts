@@ -90,6 +90,7 @@ export class WhatsappService {
                     
                     console.log(`PDF sent via Cloudinary with SID: ${mediaMessage.sid}`);
                 } catch (error) {
+                    await deleteonCloudinary(this.pdfCloudinaryURL || '');
                     console.error('File handling error:', error);
                     attachmentFailed = true;
                     
@@ -108,6 +109,7 @@ export class WhatsappService {
                     console.log(`Fallback message with link sent with SID: ${mediaMessage.sid}`);
                 }
             }
+            await deleteonCloudinary(filePath || '');
     
             return {
                 statuscode: statuscode.OK,

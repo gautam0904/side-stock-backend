@@ -233,6 +233,16 @@ export class CustomerService {
         const existingCustomer = await Customer.findOne({
             _id: customer._id
         });
+
+        if (typeof customer.sites === 'string') {
+            customer.sites = JSON.parse(customer.sites);
+        } else if (Array.isArray(customer.sites)) {
+            customer.sites = customer.sites;
+        } else if (typeof customer.sites === 'object') {
+            customer.sites = [customer.sites];
+        } else {
+            customer.sites = [];
+        }
     
         // Remove JSON.parse for sites
         if (customer.sites) {

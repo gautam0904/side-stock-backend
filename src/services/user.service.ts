@@ -63,7 +63,7 @@ export class UserService {
 
             const token = jwt.sign(
                 { id: existUser._id },
-                process.env.AccessTokenSeceret || 'side',
+                process.env.ACCESSTOKENSECERET || 'side',
                 { expiresIn: process.env.AccessExpire || '1d' }
             );
 

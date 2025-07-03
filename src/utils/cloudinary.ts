@@ -35,6 +35,8 @@ export const uploadOnCloudinary = async (localFilePath: string, options: any = {
       resource_type: response.resource_type
     });
 
+    fs.unlinkSync(localFilePath); // Delete the local file after upload
+
     return {
       success: true,
       message: "File uploaded successfully",

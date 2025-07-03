@@ -13,6 +13,7 @@ import challanRoutes from './routes/challan.routes.js';
 import billRoutes from './routes/bill.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import msgRoutes from './routes/whatrsapp.routes.js';
+import userPreferenceRoutes from './routes/userPreference.routes.js';
 
 dotenv.config();
 
@@ -23,11 +24,13 @@ app.use(urlencoded({extended: true, limit: "16kb"}));
 app.use(express.static("public"));
 
 app.use(cors({
-    origin: '*',
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'https://side-stock.vercel.app'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+app.options('*', cors());
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/customer", customerRoutes);
@@ -38,6 +41,7 @@ app.use("/api/v1/challan", challanRoutes);
 app.use("/api/v1/bill", billRoutes);
 app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/whatsapp", msgRoutes);
+app.use("/api/v1/user-preferences", userPreferenceRoutes);
 
 const PORT = process.env.PORT || 4000;
 

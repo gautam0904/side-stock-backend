@@ -31,6 +31,9 @@ export const ERROR_MSG = {
   USER_RETRIEVE_FAILED: 'Failed to retrieve user',
   DELETED_USER_NOT_FOUND: 'No deleted user found',
   PASSWORD_MISMATCH: 'Password does not match',
+
+  // Token related
+   EXPIRED_TOKEN: 'Access token is not verified it may be expired',
   
   // Authorization
   INVALID_PERMISSION: (role: string, action: string = '') => 
