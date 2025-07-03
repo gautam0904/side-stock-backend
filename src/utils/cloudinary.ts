@@ -1,57 +1,72 @@
-import { v2 as cloudinary } from 'cloudinary';
+import cloudinary from 'cloudinary';
 import fs from 'fs';
-import { ApiError } from '../utils/apiError.js';
-import { statuscode } from '../constants/status.js';
 
-cloudinary.config({
-  cloud_name: "dcvx4tnwp",
-  api_key: "596258636375658",
-  api_secret: "PBWzlNAuSmudhmV7BpGB-KHFk3k"
+cloudinary.v2.config({
+  cloud_name: 'dmnwvonzf',
+  api_key: '321296846966243',
+  api_secret: 'u1n81YsmueJJb6v2tVJYcH_H2WE'
 });
 
-const deleteFileIfExists = (path: string) => {
-  if (fs.existsSync(path)) {
-    fs.unlinkSync(path);
+
+export const uploadOnCloudinary = async (localFilePath: string, options: any = {}) => {
+  try {
+    if (!localFilePath) return { success: false, message: "No file path provided" };
+    
+    if (!fs.existsSync(localFilePath)) {
+      return { success: false, message: "File does not exist" };
+    }
+
+    const defaultOptions = {
+      resource_type: "raw",
+      format: "pdf",
+      type: "upload",
+      access_mode: "public"
+    };
+
+    const uploadOptions = { ...defaultOptions, ...options };
+    
+    console.log(`Uploading to Cloudinary with options:`, uploadOptions);
+    const response = await cloudinary.v2.uploader.upload(localFilePath, uploadOptions);
+    
+    console.log("Cloudinary upload response:", {
+      public_id: response.public_id,
+      url: response.secure_url,
+      format: response.format,
+      resource_type: response.resource_type
+    });
+
+    return {
+      success: true,
+      message: "File uploaded successfully",
+      public_id: response.public_id,
+      url: response.secure_url
+    };
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to upload to Cloudinary",
+      error
+    };
   }
 };
 
-const uploadOnCloudinary = async (localpath: string) => {
+export const deleteonCloudinary = async (publicId: string) => {
   try {
-    console.log(localpath);
+    if (!publicId) return { success: false, message: "No public ID provided" };
     
-    if (!localpath) throw new ApiError(statuscode.NOTACCEPTABLE, "No file path provided.");
-
-    const stats = fs.statSync(localpath);
-    if (stats.size === 0) {
-      throw new ApiError(statuscode.NOTACCEPTABLE, "The file is empty.");
-    }
-
-    const response = await cloudinary.uploader.upload(localpath, { resource_type: 'auto' });
-    deleteFileIfExists(localpath);
-    console.log("File uploaded to Cloudinary:", response.url);
-
-    return { success: true, data: response, message: "File uploaded to Cloudinary successfully." };
+    const response = await cloudinary.v2.uploader.destroy(publicId);
+    
+    return {
+      success: response.result === "ok",
+      message: response.result === "ok" ? "File deleted successfully" : "Failed to delete file"
+    };
   } catch (error) {
-    console.error(error.message || "Error uploading file:");
-    deleteFileIfExists(localpath);
-    return { success: false, data: null, message: error.message || "Error uploading file to Cloudinary." };
+    console.error("Cloudinary delete error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to delete from Cloudinary",
+      error
+    };
   }
-}
-
-const deleteonCloudinary = async (url: string) => {
-  try {
-    if (!url) throw new ApiError(statuscode.NOTACCEPTABLE, "No URL provided.");
-    const imageName = url.split('/').pop()?.split('.')[0];
-    if (!imageName) throw new ApiError(statuscode.NOTACCEPTABLE, "Invalid URL format.");
-
-    const response = await cloudinary.uploader.destroy(imageName);
-    console.log("File deleted from Cloudinary:", response);
-
-    return { success: true, data: response, message: "File deleted from Cloudinary successfully." };
-  } catch (error) {
-    console.error(error.message || "Error deleting image from Cloudinary:");
-    return { success: false, message: error.message || "Error deleting image from Cloudinary." };
-  }
-}
-
-export { uploadOnCloudinary, deleteonCloudinary }
+};

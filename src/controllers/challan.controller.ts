@@ -45,5 +45,3 @@ export const deleteChallan = async (req: Request, res: Response) => {
         res.status(error.statuscode || statuscode.INTERNALSERVERERROR).json({ message: error.message || ERROR_MSG.DEFAULT_ERROR, data: error });
     }
 }
-
-

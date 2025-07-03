@@ -27,29 +27,29 @@ export class BillService {
 
         const aggregationPipeline = [
             {
-              '$match': {
-                '_id': challan._id
-              }
+                '$match': {
+                    '_id': challan._id
+                }
             }, {
-              '$lookup': {
-                'from': 'customers', 
-                'localField': 'customerId', 
-                'foreignField': '_id', 
-                'as': 'customerDetails'
-              }
+                '$lookup': {
+                    'from': 'customers',
+                    'localField': 'customerId',
+                    'foreignField': '_id',
+                    'as': 'customerDetails'
+                }
             }, {
-              '$unwind': '$customerDetails'
+                '$unwind': '$customerDetails'
             }
-          ]
+        ]
         const challans = await Challan.aggregate(aggregationPipeline);
         if (!challans.length) throw new ApiError(statuscode.NOCONTENT, 'Challan not found');
 
-        let previousRestBill = 0; 
+        let previousRestBill = 0;
         const monthWiseData = challans.map((challan: IChallan) => {
             const today = new Date();
             let monthlyProducts: any = [];
 
-            const billProducts = challan.products.map((p)=>(
+            const billProducts = challan.products.map((p) => (
                 {
                     productName: p.productName,
                     quantity: p.quantity,
@@ -61,8 +61,8 @@ export class BillService {
             ))
 
             billProducts.forEach((product) => {
-                const startDate =  new Date(product.startingDate || today);
-                const endDate =  today
+                const startDate = new Date(product.startingDate || today);
+                const endDate = today
 
                 const monthWiseAmounts = this.calculateMonthlyAmounts(startDate, endDate, startDate, endDate, product.rate || 0, product.quantity || 0);
 
@@ -92,7 +92,7 @@ export class BillService {
                     const dayCount = parseInt((Math.max(0, (productEndDate.getTime() - productStartDate.getTime()) / (1000 * 3600 * 24) + 1)).toString());
 
                     let totalPaid = 0;
-                   
+
 
                     previousRestBill += monthData.amount;
                     const remainingDue = previousRestBill - totalPaid;
@@ -150,7 +150,7 @@ export class BillService {
         const [customerBillCount] = await Promise.all([
             this.getNextSequence('customerBill'),
         ]);
-    
+
         // Generate formatted bill number
         const billNumber = `B${customerBillCount.toString().padStart(3, '0')}${challan.challanNumber}P`;
 
@@ -163,23 +163,23 @@ export class BillService {
             partnerMobileNumber: customerDetails.partnerMobileNumber || '',
             reference: customerDetails.reference,
             referenceMobileNumber: customerDetails.referenceMobileNumber,
-            
+
             // Address Info
             billAddress: customerDetails.residentAddress || 'local',
             siteName: challanDetail.siteName,
             siteAddress: challanDetail.siteAddress,
-            
+
             // Financial Info
             pancard: customerDetails.pancardNo || 'id NULL',
             damageCharge: challanDetail.damageCharge || 0,
             serviceCharge: challanDetail.serviceCharge || 0,
             totalPayment: (finalTotal.totalAmount) || 0,
-            
-            billNumber, 
+
+            billNumber,
             date: new Date(),
             billTo: customerDetails.customerName,
             billName: customerDetails.customerName,
-            
+
             // Products and Challan Reference
             products: monthWiseData,
             challans: [challan._id],
@@ -194,12 +194,12 @@ export class BillService {
 
     private async getNextSequence(name: string): Promise<number> {
         const result = await Counter.findOneAndUpdate(
-          { name },
-          { $inc: { seq: 1 } },
-          { new: true, upsert: true }
+            { name },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
         );
         return result.seq;
-      }
+    }
 
     async getBill(options: any): Promise<PaginatedResponse> {
         const {
@@ -223,6 +223,170 @@ export class BillService {
                         { billName: { $regex: customerName.toString(), $options: 'i' } },
                         { siteName: { $regex: siteName.toString(), $options: 'i' } },
                     ]
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'challans',
+                    'let': {
+                        'challan_ids': '$challans._id'
+                    },
+                    'pipeline': [
+                        {
+                            '$match': {
+                                '$expr': {
+                                    '$in': [
+                                        '$_id', '$$challan_ids'
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    'as': 'challanDetails'
+                }
+            }, {
+                '$unwind': {
+                    'path': '$challanDetails',
+                    'preserveNullAndEmptyArrays': true
+                }
+            }, {
+                '$group': {
+                    '_id': '$_id',
+                    'billName': {
+                        '$first': '$billName'
+                    },
+                    'mobileNumber': {
+                        '$first': '$mobileNumber'
+                    },
+                    'billNumber': {
+                        '$first': '$billNumber'
+                    },
+                    'partnerName': {
+                        '$first': '$partnerName'
+                    },
+                    'partnerMobileNumber': {
+                        '$first': '$partnerMobileNumber'
+                    },
+                    'date': {
+                        '$first': '$date'
+                    },
+                    'today': {
+                        '$first': '$today'
+                    },
+                    'billTo': {
+                        '$first': '$billTo'
+                    },
+                    'reference': {
+                        '$first': '$reference'
+                    },
+                    'referenceMobileNumber': {
+                        '$first': '$referenceMobileNumber'
+                    },
+                    'billAddress': {
+                        '$first': '$billAddress'
+                    },
+                    'siteName': {
+                        '$first': '$siteName'
+                    },
+                    'siteAddress': {
+                        '$first': '$siteAddress'
+                    },
+                    'pancard': {
+                        '$first': '$pancard'
+                    },
+                    'products': {
+                        '$first': '$products'
+                    },
+                    'monthData': {
+                        '$first': '$monthData'
+                    },
+                    'serviceCharge': {
+                        '$first': '$serviceCharge'
+                    },
+                    'damageCharge': {
+                        '$first': '$damageCharge'
+                    },
+                    'totalPayment': {
+                        '$first': '$totalPayment'
+                    },
+                    'createdAt': {
+                        '$first': '$createdAt'
+                    },
+                    'updatedAt': {
+                        '$first': '$updatedAt'
+                    },
+                    'challans': {
+                        '$push': {
+                            '$cond': [
+                                {
+                                    '$ifNull': [
+                                        '$challanDetails', false
+                                    ]
+                                }, {
+                                    '_id': '$challanDetails._id',
+                                    'challenType': '$challanDetails.challenType',
+                                    'date': '$challanDetails.date',
+                                    'customerName': '$challanDetails.customerName',
+                                    'customerId': '$challanDetails.customerId',
+                                    'customerDetails': '$customerDetails',
+                                    'siteName': '$challanDetails.siteName',
+                                    'siteAddress': '$challanDetails.siteAddress',
+                                    'loading': '$challanDetails.loading',
+                                    'unloading': '$challanDetails.unloading',
+                                    'challanNumber': '$challanDetails.challanNumber',
+                                    'mobileNumber': '$challanDetails.mobileNumber',
+                                    'transportCharges': '$challanDetails.transportCharges',
+                                    'serviceCharge': '$challanDetails.serviceCharge',
+                                    'damageCharge': '$challanDetails.damageCharge',
+                                    'amount': '$challanDetails.amount',
+                                    'totalAmount': '$challanDetails.totalAmount',
+                                    'products': '$challanDetails.products',
+                                    'createdAt': '$challanDetails.createdAt',
+                                    'updatedAt': '$challanDetails.updatedAt'
+                                }, null
+                            ]
+                        }
+                    }
+                }
+            }, {
+                '$addFields': {
+                    'challans': {
+                        '$filter': {
+                            'input': '$challans',
+                            'as': 'challan',
+                            'cond': {
+                                '$ne': [
+                                    '$$challan', null
+                                ]
+                            }
+                        }
+                    }
+                }
+            }, {
+                '$project': {
+                    '_id': 1,
+                    'billName': 1,
+                    'mobileNumber': 1,
+                    'billNumber': 1,
+                    'partnerName': 1,
+                    'partnerMobileNumber': 1,
+                    'date': 1,
+                    'today': 1,
+                    'billTo': 1,
+                    'reference': 1,
+                    'referenceMobileNumber': 1,
+                    'billAddress': 1,
+                    'siteName': 1,
+                    'siteAddress': 1,
+                    'pancard': 1,
+                    'products': 1,
+                    'monthData': 1,
+                    'serviceCharge': 1,
+                    'damageCharge': 1,
+                    'totalPayment': 1,
+                    'createdAt': 1,
+                    'updatedAt': 1,
+                    'challans': 1
                 }
             },
             {
@@ -336,8 +500,40 @@ export class BillService {
         }, {});
 
         const billData: any = result.data[0] ?? {};
-        billData.totalPayment = finalTotal
+        billData.totalPayment = finalTotal;
 
+        const givenStartMonth = new Date(givenStartDate).getMonth() + 1;
+        const givenEndMonth = new Date(givenEndDate).getMonth() + 1;
+        const givenStartYear = new Date(givenStartDate).getFullYear();
+        const givenEndYear = new Date(givenEndDate).getFullYear();
+
+        const monthData = billData.monthData;
+        billData.monthData = [];
+
+        monthData.filter((md: any) => {
+            if (md.year <= givenEndYear &&
+                md.year >= givenStartYear &&
+                md.month <= givenEndMonth &&
+                md.month >= givenStartMonth
+            ) {
+                if (md.year == givenStartYear && md.month == givenStartMonth) {
+                    md.products.filter((p: any) => p.startingDate >= new Date(givenStartDate));
+                    return {
+                        ...md,
+                    }
+                } else if (md.year == givenEndYear && md.month == givenEndMonth) {
+                    md.products.filter((p: any) => p.startingDate <= new Date(givenEndDate));
+                    return {
+                        ...md
+                    }
+                } else {
+                    return {
+                        ...md
+                    }
+                }
+            }
+        })
+        billData.monthData = monthData
         // Step 5: Return the response
         return {
             statuscode: statuscode.OK,
@@ -354,7 +550,7 @@ export class BillService {
             }
         };
     }
-                               
+
     private calculateMonthlyAmounts(startDate: Date, endDate: Date, productStartDate: Date, productEndDate: Date | null, rate: Number, quantity: Number) {
         const monthWiseAmounts = [];
 

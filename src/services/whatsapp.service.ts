@@ -4,12 +4,7 @@ import { ApiError } from "../utils/apiError.js";
 import twilio from 'twilio';
 import dotenv from 'dotenv';
 import fs from 'fs';
-import axios from 'axios';
-import FormData from 'form-data';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { deleteonCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 
 dotenv.config();
 
@@ -18,14 +13,14 @@ export class WhatsappService {
     private TWILIO_AUTH_TOKEN = '';
     private TWILIO_WHATSAPP_NUMBER = '';
     private twilioClient: twilio.Twilio;
-    private IMGUR_CLIENT_ID = 'fb49a6063167315'; // Free anonymous Imgur API client ID
+    private SERVER_BASE_URL = process.env.SERVER_BASE_URL || 'http://localhost:3031';
+    pdfCloudinaryURL: string | null = null
     
     constructor() {
         this.TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
         this.TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
         this.TWILIO_WHATSAPP_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER || '';
 
-        // Set up Twilio client
         this.twilioClient = new twilio.Twilio(this.TWILIO_ACCOUNT_SID, this.TWILIO_AUTH_TOKEN);
     }
 
@@ -37,69 +32,18 @@ export class WhatsappService {
         return `whatsapp:+${cleaned}`;
     }
 
-    // Simple PDF to JPG conversion using ImageMagick (must be installed)
-    private async convertPdfToJpg(pdfPath: string): Promise<string> {
-        try {
-            const outputPath = pdfPath.replace('.pdf', '.jpg');
-            
-            // Use ImageMagick to convert PDF to JPG (first page only)
-            await execAsync(`magick convert -density 150 -quality 90 "${pdfPath}[0]" "${outputPath}"`);
-            
-            if (fs.existsSync(outputPath)) {
-                console.log(`PDF converted to JPG: ${outputPath}`);
-                return outputPath;
-            }
-            
-            throw new Error('Conversion failed - output file not found');
-        } catch (error) {
-            console.error('PDF to JPG conversion error:', error);
-            
-            // Fallback: if ImageMagick fails, try with another approach
-            // (This is just a placeholder - you would need to implement alternative conversion)
-            throw new Error('Failed to convert PDF to JPG');
-        }
-    }
-    
-    // Upload image to Imgur (free, reliable image hosting)
-    private async uploadToImgur(imagePath: string): Promise<string> {
-        try {
-            const imageData = fs.readFileSync(imagePath);
-            
-            const formData = new FormData();
-            formData.append('image', imageData);
-            
-            const response = await axios.post('https://api.imgur.com/3/image', formData, {
-                headers: {
-                    Authorization: `Client-ID ${this.IMGUR_CLIENT_ID}`,
-                    ...formData.getHeaders()
-                }
-            });
-            
-            if (response.data && response.data.success && response.data.data && response.data.data.link) {
-                console.log(`Image uploaded to Imgur: ${response.data.data.link}`);
-                return response.data.data.link;
-            } else {
-                throw new Error('Imgur upload failed');
-            }
-        } catch (error) {
-            console.error('Imgur upload error:', error);
-            throw new Error(`Failed to upload image: ${error.message}`);
-        }
-    }
-
     async sendmessage(to: string, body: string, filePath?: string) {
         try {
-            console.log(`Sending WhatsApp message to ${to}`);
+            console.log(`Sending WhatsApp message to ${to}${filePath ? ' with attachment' : ''}`);
             
             if (!this.TWILIO_ACCOUNT_SID || !this.TWILIO_AUTH_TOKEN || !this.TWILIO_WHATSAPP_NUMBER) {
                 throw new ApiError(statuscode.INTERNALSERVERERROR, "WhatsApp credentials are not configured");
             }
-
-            // Format the phone number
+    
             const formattedNumber = this.formatPhoneNumber(to);
             console.log(`Formatted number: ${formattedNumber}`);
-
-            // Send initial message
+    
+            // Initial message
             const textMessage = await this.twilioClient.messages.create({
                 from: `whatsapp:${this.TWILIO_WHATSAPP_NUMBER}`,
                 to: formattedNumber,
@@ -108,69 +52,71 @@ export class WhatsappService {
             
             console.log(`Text message sent with SID: ${textMessage.sid}`);
             
-            // Handle PDF if provided
             let mediaMessage = null;
-            let imageUrl = null;
-            
+            let attachmentFailed = false;
+    
             if (filePath && fs.existsSync(filePath)) {
                 try {
-                    // Step 1: Convert PDF to JPG
-                    let jpgPath;
-                    try {
-                        jpgPath = await this.convertPdfToJpg(filePath);
-                    } catch (conversionError) {
-                        console.error('PDF conversion failed:', conversionError);
-                        jpgPath = null;
-                    }
+                    // Upload to Cloudinary with specific settings for WhatsApp compatibility
+                    const uploadResult = await uploadOnCloudinary(filePath, {
+                        resource_type: 'raw',
+                        format: 'pdf',
+                        type: 'upload',
+                        access_mode: 'public',
+                        use_filename: true
+                    });
                     
-                    // Step 2: Upload JPG to Imgur
-                    if (jpgPath) {
-                        try {
-                            imageUrl = await this.uploadToImgur(jpgPath);
-                        } catch (uploadError) {
-                            console.error('Image upload failed:', uploadError);
-                        }
-                        
-                        // Clean up temporary JPG file
-                        try {
-                            fs.unlinkSync(jpgPath);
-                        } catch (cleanupError) {
-                            console.warn('Failed to clean up temporary file:', cleanupError);
-                        }
+                    if (!uploadResult.success || !uploadResult.url) {
+                        throw new Error('Failed to upload PDF to Cloudinary');
                     }
+    
+                    this.pdfCloudinaryURL = uploadResult.url;
+                    console.log(`PDF uploaded to Cloudinary: ${this.pdfCloudinaryURL}`);
                     
-                    // Step 3: Send image via WhatsApp
-                    if (imageUrl) {
-                        mediaMessage = await this.twilioClient.messages.create({
-                            from: `whatsapp:${this.TWILIO_WHATSAPP_NUMBER}`,
-                            to: formattedNumber,
-                            body: body || "Here is your bill.",
-                            mediaUrl: [imageUrl]
-                        });
-                        
-                        console.log(`Image message sent with SID: ${mediaMessage.sid}`);
-                    } else {
-                        // Send just a text if image upload failed
-                        mediaMessage = await this.twilioClient.messages.create({
-                            from: `whatsapp:${this.TWILIO_WHATSAPP_NUMBER}`,
-                            to: formattedNumber,
-                            body: `${body || "Here is your bill information."}\n\nUnfortunately we couldn't attach the PDF. Please contact our support team.`
-                        });
-                        
-                        console.log(`Fallback text message sent with SID: ${mediaMessage.sid}`);
-                    }
-                } catch (fileError) {
-                    console.error('PDF handling error:', fileError);
+                    // Make sure URL is properly accessible and has appropriate content type
+                    // Twilio requires a publicly accessible URL with proper content type headers
+                    const pdfUrl = this.pdfCloudinaryURL;
+                    
+                    // Verify URL is accessible before sending to Twilio
+                    await this.verifyMediaUrl(pdfUrl);
+                    
+                    // Send with verified Cloudinary URL
+                    mediaMessage = await this.twilioClient.messages.create({
+                        from: `whatsapp:${this.TWILIO_WHATSAPP_NUMBER}`,
+                        to: formattedNumber,
+                        body: body || "Here is your bill (attached).",
+                        mediaUrl: [pdfUrl]
+                    });
+                    
+                    console.log(`PDF sent via Cloudinary with SID: ${mediaMessage.sid}`);
+                } catch (error) {
+                    console.error('File handling error:', error);
+                    attachmentFailed = true;
+                    
+                    // Send message with link instead of attachment
+                    const messageBody = `${body || "Here is your bill information."}${
+                        this.pdfCloudinaryURL 
+                            ? `\n\nDownload your bill here: ${this.pdfCloudinaryURL}` 
+                            : '\n\nCould not attach file. Please contact support.'
+                    }`;
+                    
+                    mediaMessage = await this.twilioClient.messages.create({
+                        from: `whatsapp:${this.TWILIO_WHATSAPP_NUMBER}`,
+                        to: formattedNumber,
+                        body: messageBody
+                    });
+                    console.log(`Fallback message with link sent with SID: ${mediaMessage.sid}`);
                 }
             }
-
+    
             return {
                 statuscode: statuscode.OK,
                 message: 'WhatsApp message sent successfully!',
                 twilioResponse: {
                     textMessageSid: textMessage.sid,
                     mediaMessageSid: mediaMessage?.sid,
-                    imageUrl: imageUrl,
+                    pdfUrl: this.pdfCloudinaryURL,
+                    attachmentFailed: attachmentFailed,
                     status: textMessage.status || 'sent'
                 }
             };
@@ -180,6 +126,38 @@ export class WhatsappService {
                 error.statuscode || statuscode.INTERNALSERVERERROR, 
                 error.message || ERROR_MSG.DEFAULT_ERROR
             );
+        }
+    }
+    
+    // Helper method to verify that a URL is accessible before sending to Twilio
+    private async verifyMediaUrl(url: string): Promise<boolean> {
+        try {
+            const response = await fetch(url, { method: 'HEAD' });
+            
+            if (!response.ok) {
+                throw new Error(`URL returned status: ${response.status}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            console.log(`Media URL response: ${response.status}, Content-Type: ${contentType}`);
+            
+            // Twilio accepts these content types for WhatsApp
+            const validTypes = [
+                'application/pdf', 
+                'image/jpeg', 
+                'image/png', 
+                'image/gif',
+                'application/octet-stream'
+            ];
+            
+            if (contentType && !validTypes.some(type => contentType.includes(type))) {
+                console.warn(`Warning: Content-Type ${contentType} may not be accepted by Twilio for WhatsApp`);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error(`Failed to verify media URL ${url}:`, error);
+            throw new Error(`Media URL verification failed: ${error.message}`);
         }
     }
 }
